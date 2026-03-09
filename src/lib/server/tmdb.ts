@@ -5,6 +5,8 @@ const TMDB_SEARCH_URL = 'https://api.themoviedb.org/3/search/movie';
 export interface TmdbSearchResult {
 	poster_path: string | null;
 	overview?: string | null;
+	release_date?: string | null;
+	genre_ids?: number[];
 	[key: string]: unknown;
 }
 
@@ -15,13 +17,54 @@ export interface TmdbSearchResponse {
 export interface TmdbMovieDetails {
 	posterPath: string | null;
 	overview: string | null;
+	genre: string | null;
+	year: string | null;
+}
+
+/** TMDB movie genre ID to name (from https://api.themoviedb.org/3/genre/movie/list) */
+const TMDB_MOVIE_GENRES: Record<number, string> = {
+	28: 'Action',
+	12: 'Adventure',
+	16: 'Animation',
+	35: 'Comedy',
+	80: 'Crime',
+	99: 'Documentary',
+	18: 'Drama',
+	10751: 'Family',
+	14: 'Fantasy',
+	36: 'History',
+	27: 'Horror',
+	10402: 'Music',
+	9648: 'Mystery',
+	10749: 'Romance',
+	878: 'Sci-Fi',
+	10770: 'TV Movie',
+	53: 'Thriller',
+	10752: 'War',
+	37: 'Western'
+};
+
+function genreIdsToNames(genreIds: number[] | undefined): string | null {
+	if (!Array.isArray(genreIds) || genreIds.length === 0) return null;
+	const names = genreIds
+		.map((id) => TMDB_MOVIE_GENRES[id])
+		.filter(Boolean)
+		.slice(0, 3);
+	return names.length > 0 ? names.join(', ') : null;
+}
+
+function releaseDateToYear(releaseDate: string | null | undefined): string | null {
+	if (!releaseDate || typeof releaseDate !== 'string') return null;
+	const trimmed = releaseDate.trim();
+	if (trimmed.length >= 4) return trimmed.slice(0, 4);
+	return null;
 }
 
 /**
- * Search TMDB by movie title and return poster path and overview of the first result.
+ * Search TMDB by movie title and return poster path, overview, genre and year of the first result.
  */
 export async function searchMovieDetails(title: string): Promise<TmdbMovieDetails> {
-	const empty = { posterPath: null, overview: null };
+	const empty = { posterPath: null, overview: null, genre: null, year: null };
 	const key = (env.TMDB_API_KEY ?? process.env.TMDB_API_KEY)?.trim();
 	if (!key) return empty;
 
@@ -40,11 +83,13 @@ export async function searchMovieDetails(title: string): Promise<TmdbMovieDetail
 	if (!Array.isArray(results) || results.length === 0) return empty;
 
 	const firstWithPoster = results.find((r) => r?.poster_path != null && String(r.poster_path).trim() !== '');
-	if (!firstWithPoster) return { posterPath: null, overview: null };
+	if (!firstWithPoster) return empty;
 	const posterPath = String(firstWithPoster.poster_path);
 	const overview =
 		firstWithPoster.overview != null && String(firstWithPoster.overview).trim() !== ''
 			? String(firstWithPoster.overview).trim()
 			: null;
-	return { posterPath, overview };
+	const genre = genreIdsToNames(firstWithPoster.genre_ids);
+	const year = releaseDateToYear(firstWithPoster.release_date);
+	return { posterPath, overview, genre, year };
 }

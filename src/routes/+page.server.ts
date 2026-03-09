@@ -18,22 +18,29 @@ export const load: PageServerLoad = async (event) => {
 			.where(eq(watchlist.userId, user.id))
 			.orderBy(desc(watchlist.createdAt));
 
-		// Normalize so client always gets posterPath and overview (camelCase)
+		// Normalize so client always gets camelCase (posterPath, overview, genre, year)
 		const watchlistData = items.map((row) => {
-			const r = row as { poster_path?: string | null; overview?: string | null };
+			const r = row as {
+				poster_path?: string | null;
+				overview?: string | null;
+				genre?: string | null;
+				year?: string | null;
+			};
 			return {
 				...row,
 				posterPath: row.posterPath ?? r.poster_path ?? null,
-				overview: row.overview ?? r.overview ?? null
+				overview: row.overview ?? r.overview ?? null,
+				genre: row.genre ?? r.genre ?? null,
+				year: row.year ?? r.year ?? null
 			};
 		});
 
 		return { watchlist: watchlistData };
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
-		if (msg.includes('watched_at') || msg.includes('column')) {
+		if (msg.includes('watched_at') || msg.includes('rating') || msg.includes('column')) {
 			throw new Error(
-				'Database schema is out of date. Run: pnpm db:push (then choose Yes to add the watched_at column).'
+				'Database schema is out of date. Run: pnpm db:migrate (or pnpm db:push) to add missing columns (e.g. watched_at, rating).'
 			);
 		}
 		throw err;
@@ -53,14 +60,28 @@ export const actions: Actions = {
 			return fail(400, { message: 'Title is required' });
 		}
 
-		const details = await searchMovieDetails(title);
-
-		await db.insert(watchlist).values({
-			userId: user.id,
-			title,
-			posterPath: details.posterPath ?? null,
-			overview: details.overview ?? null
-		});
+		try {
+			const details = await searchMovieDetails(title);
+			await db.insert(watchlist).values({
+				userId: user.id,
+				title,
+				posterPath: details.posterPath ?? null,
+				overview: details.overview ?? null,
+				genre: details.genre ?? null,
+				year: details.year ?? null
+			});
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			if (msg.includes('column') || msg.includes('schema')) {
+				return fail(422, {
+					message: 'Database schema out of date. Run: pnpm db:migrate'
+				});
+			}
+			// TMDB or network error – return 422 so client gets message, not error page
+			return fail(422, {
+				message: 'Could not add movie. Check the title or try again later.'
+			});
+		}
 
 		return {};
 	},
@@ -77,9 +98,13 @@ export const actions: Actions = {
 			return fail(400, { message: 'Invalid item' });
 		}
 
-		await db
-			.delete(watchlist)
-			.where(and(eq(watchlist.id, parsed), eq(watchlist.userId, user.id)));
+		try {
+			await db
+				.delete(watchlist)
+				.where(and(eq(watchlist.id, parsed), eq(watchlist.userId, user.id)));
+		} catch (err) {
+			return fail(422, { message: 'Could not remove movie. Try again.' });
+		}
 
 		return {};
 	},
@@ -104,11 +129,45 @@ export const actions: Actions = {
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
 			if (msg.includes('watched_at') || msg.includes('column')) {
-				return fail(500, {
+				return fail(422, {
 					message: 'Database missing watched_at column. Run: pnpm db:push'
 				});
 			}
-			return fail(500, { message: 'Could not update movie.' });
+			return fail(422, { message: 'Could not update movie.' });
+		}
+
+		return {};
+	},
+	setRating: async (event) => {
+		const user = event.locals.user;
+		if (!user) {
+			return fail(401, { message: 'Not logged in' });
+		}
+
+		const formData = await event.request.formData();
+		const id = formData.get('id');
+		const rating = formData.get('rating')?.toString();
+		const parsed = typeof id === 'string' ? parseInt(id, 10) : NaN;
+		if (Number.isNaN(parsed) || parsed < 1) {
+			return fail(400, { message: 'Invalid item' });
+		}
+		if (!rating || !['1', '2', '3', '4', '5'].includes(rating)) {
+			return fail(400, { message: 'Invalid rating' });
+		}
+
+		try {
+			await db
+				.update(watchlist)
+				.set({ rating })
+				.where(and(eq(watchlist.id, parsed), eq(watchlist.userId, user.id)));
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			if (msg.includes('rating') || msg.includes('column')) {
+				return fail(422, {
+					message: 'Database missing rating column. Run: pnpm db:migrate or pnpm db:push'
+				});
+			}
+			return fail(422, { message: 'Could not save rating.' });
 		}
 
 		return {};
@@ -134,11 +193,11 @@ export const actions: Actions = {
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
 			if (msg.includes('watched_at') || msg.includes('column')) {
-				return fail(500, {
+				return fail(422, {
 					message: 'Database missing watched_at column. Run: pnpm db:push'
 				});
 			}
-			return fail(500, { message: 'Could not update movie.' });
+			return fail(422, { message: 'Could not update movie.' });
 		}
 
 		return {};

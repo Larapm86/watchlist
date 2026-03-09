@@ -36,6 +36,20 @@
       "when": 1773081339319,
       "tag": "0004_silly_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773089689083,
+      "tag": "0005_daily_jackal",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773092077703,
+      "tag": "0006_steep_catseye",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,6 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
-	import User from '$lib/components/icons/User.svelte';
 	import LogOut from '$lib/components/icons/LogOut.svelte';
 	import Plus from '$lib/components/icons/Plus.svelte';
 	import { addFormMessage } from '$lib/stores/addForm';
@@ -14,19 +13,23 @@
 	let userMenuWrap: HTMLDivElement;
 
 	onMount(() => {
-		const mq = window.matchMedia('(prefers-color-scheme: dark)');
-		const setTheme = () => {
-			document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light');
-		};
-		setTheme();
-		mq.addEventListener('change', setTheme);
-		return () => mq.removeEventListener('change', setTheme);
+		document.documentElement.setAttribute('data-theme', 'dark');
 	});
 
 	function handleClickOutside(e: MouseEvent) {
 		if (userMenuOpen && userMenuWrap && !userMenuWrap.contains(e.target as Node)) {
 			userMenuOpen = false;
 		}
+	}
+
+	function userInitials(user: { name?: string | null; email: string }) {
+		const name = user.name?.trim();
+		if (name) {
+			const parts = name.split(/\s+/);
+			if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+			return name.slice(0, 2).toUpperCase();
+		}
+		return (user.email?.slice(0, 2) ?? '?').toUpperCase();
 	}
 </script>
 
@@ -102,8 +105,11 @@
 					id="user-menu-trigger"
 					onclick={() => (userMenuOpen = !userMenuOpen)}
 				>
-					<User size={18} />
-					<span class="user-menu-trigger-label">{data.user.name?.trim() || data.user.email}</span>
+					{#if data.user.image}
+						<img src={data.user.image} alt="" class="user-avatar" width="28" height="28" />
+					{:else}
+						<span class="user-avatar user-avatar-initials" aria-hidden="true">{userInitials(data.user)}</span>
+					{/if}
 				</button>
 				{#if userMenuOpen}
 					<div
@@ -137,7 +143,7 @@
 	<main class="main">
 		{@render children()}
 	</main>
-	<!-- VHS/CRT overlay: scanlines + grain + subtle blue tint (pointer-events: none) -->
+	<!-- VHS/CRT overlay: grain + neutral tint (scanlines are on posters in page) -->
 	<div class="vhs-overlay" aria-hidden="true"></div>
 </div>
 
@@ -156,113 +162,68 @@
 	}
 
 	:global(html) {
-		color-scheme: light dark;
-		--bg: #f5f5f5;
-		--text: #1a1a1a;
-		--text-muted: #444;
-		--border: #e5e5e5;
-		--input-bg: #fff;
-		--input-border: #ccc;
-		--card-bg: #fff;
-		--btn-primary-bg: #1a1a1a;
-		--btn-primary-hover: #333;
-		--link: #0066cc;
-		--focus-ring: rgba(0, 102, 204, 0.2);
-		--error: #c00;
-		--watched-badge-bg: #e8f5e9;
-		--watched-badge-text: #2e7d32;
-		--watched-badge-border: #a5d6a7;
-		--poster-bg: #ebebeb;
-		--poster-text: #555;
-		--card-accent: #1a1a1a;
-		--card-accent-muted: #666;
-		--float-menu-bg: rgba(38, 38, 42, 0.78);
-		--float-menu-border: rgba(255, 255, 255, 0.06);
-		--float-menu-input-bg: rgba(255, 255, 255, 0.08);
-		--float-menu-input-border: rgba(255, 255, 255, 0.12);
-		--float-menu-btn-bg: rgba(255, 255, 255, 0.12);
-		--float-menu-btn-border: rgba(255, 255, 255, 0.18);
-		--float-menu-btn-text: #fff;
-		--float-menu-btn-hover: rgba(255, 255, 255, 0.2);
-		--float-menu-text: #fff;
-		--float-menu-muted: rgba(255, 255, 255, 0.55);
-		--float-menu-error: #ff8a80;
-	}
-
-	@media (prefers-color-scheme: dark) {
-		:global(html) {
-			--bg: #0f0f0f;
-			--text: #fafafa;
-			--text-muted: #a1a1aa;
-			--border: #27272a;
-			--input-bg: #18181b;
-			--input-border: #3f3f46;
-			--card-bg: #18181b;
-			--btn-primary-bg: #fafafa;
-			--btn-primary-hover: #e4e4e7;
-			--link: #60a5fa;
-			--focus-ring: rgba(96, 165, 250, 0.35);
-			--error: #f87171;
-			--watched-badge-bg: #14532d;
-			--watched-badge-text: #4ade80;
-			--watched-badge-border: #166534;
-			--poster-bg: #27272a;
-			--poster-text: #a1a1aa;
-			--card-accent: #fafafa;
-			--card-accent-muted: #a1a1aa;
-			--float-menu-bg: rgba(24, 24, 27, 0.88);
-			--float-menu-border: rgba(255, 255, 255, 0.08);
-			--float-menu-input-bg: rgba(255, 255, 255, 0.06);
-			--float-menu-input-border: rgba(255, 255, 255, 0.1);
-			--float-menu-btn-bg: #3b82f6;
-			--float-menu-btn-border: #3b82f6;
-			--float-menu-btn-text: #fff;
-			--float-menu-btn-hover: #60a5fa;
-			--float-menu-text: #fafafa;
-			--float-menu-muted: rgba(255, 255, 255, 0.5);
-			--float-menu-error: #f87171;
-		--vhs-blue: #0000CC;
-		}
-	}
-
-	/* Dark theme via data-theme so Add CTA and float menu always match when dark */
-	:global(html[data-theme='dark']) {
-		--bg: #0f0f0f;
-		--text: #fafafa;
-		--text-muted: #a1a1aa;
-		--border: #27272a;
-		--input-bg: #18181b;
-		--input-border: #3f3f46;
-		--card-bg: #18181b;
-		--btn-primary-bg: #fafafa;
-		--btn-primary-hover: #e4e4e7;
-		--link: #60a5fa;
-		--focus-ring: rgba(96, 165, 250, 0.35);
+		color-scheme: dark;
+		/* Default: dark theme (no blue) */
+		--bg: #0c0c0f;
+		--text: #e8e8f0;
+		--text-muted: #9090a0;
+		--border: #252538;
+		--input-bg: #12121a;
+		--input-border: #2a2a3a;
+		--card-bg: #12121a;
+		--btn-primary-bg: #e8e8f0;
+		--btn-primary-hover: #d0d0dc;
+		--link: #a8a8c0;
+		--focus-ring: rgba(200, 200, 210, 0.35);
 		--error: #f87171;
-		--watched-badge-bg: #14532d;
-		--watched-badge-text: #4ade80;
-		--watched-badge-border: #166534;
-		--poster-bg: #27272a;
-		--poster-text: #a1a1aa;
-		--card-accent: #fafafa;
-		--card-accent-muted: #a1a1aa;
-		--float-menu-bg: rgba(24, 24, 27, 0.88);
+		--watched-badge-bg: #0d2e0d;
+		--watched-badge-text: #6ee76e;
+		--watched-badge-border: #1a4d1a;
+		--poster-bg: #1a1a22;
+		--poster-text: #9090a0;
+		--card-accent: #e8e8f0;
+		--card-accent-muted: #9090a0;
+		--float-menu-bg: rgba(18, 18, 24, 0.92);
 		--float-menu-border: rgba(255, 255, 255, 0.08);
 		--float-menu-input-bg: rgba(255, 255, 255, 0.06);
-		--float-menu-input-border: rgba(255, 255, 255, 0.1);
-		--float-menu-btn-bg: #3b82f6;
-		--float-menu-btn-border: #3b82f6;
+		--float-menu-input-border: rgba(255, 255, 255, 0.12);
+		--float-menu-btn-bg: #3a3a4a;
+		--float-menu-btn-border: #4a4a5a;
 		--float-menu-btn-text: #fff;
-		--float-menu-btn-hover: #60a5fa;
-		--float-menu-text: #fafafa;
-		--float-menu-muted: rgba(255, 255, 255, 0.5);
+		--float-menu-btn-hover: #4a4a5a;
+		--float-menu-text: #e8e8f0;
+		--float-menu-muted: rgba(232, 232, 240, 0.5);
 		--float-menu-error: #f87171;
-		--vhs-blue: #0000CC;
+		--vhs-blue: #3a3a4a;
+		--neon-blue: #5c7cff;
 	}
 
 	:global(body) {
 		margin: 0;
 		min-height: 100vh;
+	}
+
+	/* Desktop: no vertical scroll, content fits viewport */
+	@media (min-height: 700px) {
+		:global(html),
+		:global(body) {
+			height: 100%;
+			overflow: hidden;
+		}
+		.app {
+			height: 100%;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			padding-bottom: 1rem;
+		}
+		.main {
+			flex: 1;
+			min-height: 0;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+		}
 	}
 
 	.app {
@@ -274,31 +235,24 @@
 		position: relative;
 	}
 
-	/* VHS/CRT screen effect: scanlines, grain, subtle blue tint (old recorded-movie look) */
+	/* VHS/CRT overlay: grain + neutral dark tint (scanlines are on movie posters in page) */
 	.vhs-overlay {
 		position: fixed;
 		inset: 0;
 		z-index: 9998;
 		pointer-events: none;
 		background-image:
-			repeating-linear-gradient(
-				0deg,
-				transparent 0px,
-				transparent 2px,
-				rgba(0, 0, 0, 0.07) 2px,
-				rgba(0, 0, 0, 0.07) 4px
-			),
-			linear-gradient(180deg, rgba(0, 0, 204, 0.04) 0%, transparent 30%, transparent 70%, rgba(0, 0, 204, 0.03) 100%);
-		background-size: 100% 4px, 100% 100%;
-		background-repeat: repeat, no-repeat;
-		opacity: 0.85;
+			linear-gradient(180deg, rgba(0, 0, 0, 0.03) 0%, transparent 40%, transparent 60%, rgba(0, 0, 0, 0.02) 100%);
+		background-size: 100% 100%;
+		background-repeat: no-repeat;
+		opacity: 0.95;
 	}
 	.vhs-overlay::after {
 		content: '';
 		position: absolute;
 		inset: 0;
 		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-		opacity: 0.03;
+		opacity: 0.05;
 		mix-blend-mode: overlay;
 	}
 
@@ -411,15 +365,43 @@
 	.logo {
 		font-size: 1.375rem;
 		font-weight: 600;
-		color: var(--text);
+		color: #fff;
 		text-decoration: none;
-		letter-spacing: -0.03em;
-		transition: opacity 0.2s ease;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		text-shadow:
+			0 0 4px #fff,
+			0 0 8px var(--neon-blue),
+			0 0 12px var(--neon-blue),
+			0 0 24px var(--neon-blue),
+			0 0 48px var(--neon-blue);
+		transition: text-shadow 0.2s ease, filter 0.2s ease;
+		animation: neon-flicker 4s ease-in-out infinite;
 	}
 
 	.logo:hover {
 		text-decoration: none;
-		opacity: 0.7;
+		text-shadow:
+			0 0 6px #fff,
+			0 0 12px var(--neon-blue),
+			0 0 18px var(--neon-blue),
+			0 0 32px var(--neon-blue),
+			0 0 64px var(--neon-blue);
+		filter: brightness(1.15);
+	}
+
+	@keyframes neon-flicker {
+		0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+			opacity: 1;
+		}
+		20%, 24%, 55% {
+			opacity: 0.92;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.logo {
+			animation: none;
+		}
 	}
 
 	.tagline {
@@ -460,6 +442,27 @@
 		color: var(--text);
 		background: var(--input-bg);
 		border-color: var(--border);
+	}
+
+	.user-avatar {
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		object-fit: cover;
+		flex-shrink: 0;
+	}
+	.user-avatar-initials {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: var(--neon-blue);
+		color: #fff;
+		font-size: 0.75rem;
+		font-weight: 600;
+		flex-shrink: 0;
 	}
 
 	.user-menu-trigger-label {

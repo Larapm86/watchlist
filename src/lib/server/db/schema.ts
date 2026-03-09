@@ -15,8 +15,11 @@ export const watchlist = pgTable('watchlist', {
 	title: text('title').notNull(),
 	posterPath: text('poster_path'),
 	overview: text('overview'),
+	genre: text('genre'),
+	year: text('year'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
-	watchedAt: timestamp('watched_at')
+	watchedAt: timestamp('watched_at'),
+	rating: text('rating') // 'good' | 'average' | 'bad'
 });
 
 export * from './auth.schema';
