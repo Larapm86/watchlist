@@ -22,4 +22,6 @@
 	<button>Login</button>
 	<button formaction="?/signUpEmail">Register</button>
 </form>
-<p style="color: red">{form?.message ?? ''}</p>
+{#if form?.message}
+	<p class="form-error">{form.message}</p>
+{/if}
