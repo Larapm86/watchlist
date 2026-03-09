@@ -18,20 +18,16 @@ export const load: PageServerLoad = async (event) => {
 			.where(eq(watchlist.userId, user.id))
 			.orderBy(desc(watchlist.createdAt));
 
-		// Normalize so client always gets camelCase (posterPath, overview, genre, year)
+		// Normalize so client always gets camelCase; handle both camelCase and snake_case from DB
 		const watchlistData = items.map((row) => {
-			const r = row as {
-				poster_path?: string | null;
-				overview?: string | null;
-				genre?: string | null;
-				year?: string | null;
-			};
+			const r = row as Record<string, unknown>;
+			const posterPath = (r.posterPath ?? r.poster_path ?? null) as string | null;
 			return {
 				...row,
-				posterPath: row.posterPath ?? r.poster_path ?? null,
-				overview: row.overview ?? r.overview ?? null,
-				genre: row.genre ?? r.genre ?? null,
-				year: row.year ?? r.year ?? null
+				posterPath: posterPath != null && String(posterPath).trim() !== '' ? String(posterPath).trim() : null,
+				overview: (r.overview ?? null) as string | null,
+				genre: (r.genre ?? null) as string | null,
+				year: (r.year ?? null) as string | null
 			};
 		});
 
