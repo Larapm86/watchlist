@@ -12,13 +12,25 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	try {
+		// Explicit select so posterPath and all columns have a guaranteed shape (Neon/driver can return snake_case)
 		const items = await db
-			.select()
+			.select({
+				id: watchlist.id,
+				userId: watchlist.userId,
+				title: watchlist.title,
+				posterPath: watchlist.posterPath,
+				overview: watchlist.overview,
+				genre: watchlist.genre,
+				year: watchlist.year,
+				createdAt: watchlist.createdAt,
+				watchedAt: watchlist.watchedAt,
+				rating: watchlist.rating
+			})
 			.from(watchlist)
 			.where(eq(watchlist.userId, user.id))
 			.orderBy(desc(watchlist.createdAt));
 
-		// Map rows to camelCase; Neon/driver may return snake_case column names
+		// Normalize to camelCase and handle drivers that return snake_case keys
 		function str(row: Record<string, unknown>, ...keys: string[]): string | null {
 			for (const k of keys) {
 				const v = row[k];
@@ -42,9 +54,9 @@ export const load: PageServerLoad = async (event) => {
 		return { watchlist: watchlistData };
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
-		if (msg.includes('watched_at') || msg.includes('rating') || msg.includes('column')) {
+		if (msg.includes('watched_at') || msg.includes('rating') || msg.includes('poster_path') || msg.includes('column')) {
 			throw new Error(
-				'Database schema is out of date. Run: pnpm db:migrate (or pnpm db:push) to add missing columns (e.g. watched_at, rating).'
+				'Database schema is out of date. Run: pnpm db:migrate (or pnpm db:push) to add missing columns (e.g. poster_path, watched_at, rating).'
 			);
 		}
 		throw err;
