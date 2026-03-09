@@ -1,5 +1,7 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
+	import User from '$lib/components/icons/User.svelte';
+	import LogOut from '$lib/components/icons/LogOut.svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: any } = $props();
@@ -18,10 +20,12 @@
 		{#if data.user}
 			<div class="user-row">
 				<span class="user-label" title={data.user.email}>
+					<User size={18} />
 					{data.user.name?.trim() || data.user.email}
 				</span>
 				<form method="post" action="/demo/better-auth?/signOut" class="sign-out-form">
 					<button type="submit" class="sign-out-btn" title="Sign out">
+						<LogOut size={18} />
 						Sign out
 					</button>
 				</form>

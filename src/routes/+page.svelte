@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import Plus from '$lib/components/icons/Plus.svelte';
+	import Trash2 from '$lib/components/icons/Trash2.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -11,7 +13,10 @@
 			<label for="title">Add movie</label>
 			<div class="input-row">
 				<input id="title" type="text" name="title" placeholder="Movie title" required />
-				<button type="submit" title="Add movie">Add</button>
+				<button type="submit" title="Add movie">
+				<Plus size={20} />
+				Add
+			</button>
 			</div>
 		</form>
 		{#if form?.message}
@@ -29,7 +34,10 @@
 						<span class="title">{item.title}</span>
 						<form method="post" action="?/delete" use:enhance class="delete-form">
 							<input type="hidden" name="id" value={item.id} />
-							<button type="submit" class="delete-btn" title="Remove from list">Remove</button>
+							<button type="submit" class="delete-btn" title="Remove from list">
+								<Trash2 size={18} />
+								Remove
+							</button>
 						</form>
 					</li>
 				{/each}
