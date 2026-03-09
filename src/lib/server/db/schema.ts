@@ -13,7 +13,10 @@ export const watchlist = pgTable('watchlist', {
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }),
 	title: text('title').notNull(),
-	createdAt: timestamp('created_at').defaultNow().notNull()
+	posterPath: text('poster_path'),
+	overview: text('overview'),
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+	watchedAt: timestamp('watched_at')
 });
 
 export * from './auth.schema';

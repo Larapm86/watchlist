@@ -68,6 +68,13 @@
 		--link: #0066cc;
 		--focus-ring: rgba(0, 102, 204, 0.2);
 		--error: #c00;
+		--watched-badge-bg: #e8f5e9;
+		--watched-badge-text: #2e7d32;
+		--watched-badge-border: #a5d6a7;
+		--poster-bg: #ebebeb;
+		--poster-text: #555;
+		--card-accent: #1a1a1a;
+		--card-accent-muted: #666;
 	}
 
 	@media (prefers-color-scheme: dark) {
@@ -84,6 +91,13 @@
 			--link: #6eb3f7;
 			--focus-ring: rgba(110, 179, 247, 0.3);
 			--error: #f66;
+			--watched-badge-bg: #1b3d1f;
+			--watched-badge-text: #81c784;
+			--watched-badge-border: #2e7d32;
+			--poster-bg: #2a2a2a;
+			--poster-text: #b0b0b0;
+			--card-accent: #e5e5e5;
+			--card-accent-muted: #a0a0a0;
 		}
 	}
 
@@ -93,10 +107,10 @@
 	}
 
 	.app {
-		max-width: 36rem;
-		margin: 0 auto;
+		width: 100%;
 		min-height: 100vh;
-		padding: 0 1.5rem 2rem;
+		padding: 0 1.25rem 1.5rem;
+		box-sizing: border-box;
 	}
 
 	.header {
@@ -104,7 +118,7 @@
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 1rem;
-		padding: 1.25rem 0 1.5rem;
+		padding: 1rem 0 1.25rem;
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -185,7 +199,7 @@
 	}
 
 	.main {
-		padding-top: 1.5rem;
+		padding-top: 1.25rem;
 	}
 
 	:global(h1) {

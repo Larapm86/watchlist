@@ -15,6 +15,27 @@
       "when": 1773072744064,
       "tag": "0001_bored_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773075578836,
+      "tag": "0002_past_vargas",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1773080088380,
+      "tag": "0003_eminent_jackal",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1773081339319,
+      "tag": "0004_silly_slayback",
+      "breakpoints": true
     }
   ]
 }
