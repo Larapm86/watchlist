@@ -11,6 +11,7 @@
 	let { data, children }: { data: LayoutData; children: any } = $props();
 	let userMenuOpen = $state(false);
 	let userMenuWrap: HTMLDivElement;
+	let addFormSubmitting = $state(false);
 
 	onMount(() => {
 		document.documentElement.setAttribute('data-theme', 'dark');
@@ -61,14 +62,22 @@
 					method="post"
 					action="/?/add"
 					use:enhance={() => {
+						addFormSubmitting = true;
+						addFormMessage.set(null);
 						return async ({ result, update }) => {
-							if (result.type === 'failure' && result.data?.message) {
-								addFormMessage.set(result.data.message as string);
-							} else {
-								addFormMessage.set(null);
+							try {
+								if (result.type === 'failure' && result.data?.message) {
+									addFormMessage.set(result.data.message as string);
+								} else {
+									addFormMessage.set(null);
+								}
+								await update();
+								await invalidateAll();
+							} catch (e) {
+								addFormMessage.set('Something went wrong. Please try again.');
+							} finally {
+								addFormSubmitting = false;
 							}
-							await update();
-							await invalidateAll();
 						};
 					}}
 					class="header-add-form"
@@ -84,8 +93,9 @@
 						autocomplete="off"
 						class="header-add-input"
 						oninput={() => addFormMessage.set(null)}
+						disabled={addFormSubmitting}
 					/>
-					<button type="submit" class="header-add-btn" title="Add movie">
+					<button type="submit" class="header-add-btn" title="Add movie" disabled={addFormSubmitting}>
 						<Plus size={18} />
 						<span>Add</span>
 					</button>
@@ -347,6 +357,10 @@
 	.header-add-btn:focus-visible {
 		outline: 2px solid var(--link);
 		outline-offset: 2px;
+	}
+	.header-add-btn:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
 	}
 
 	.header-add-error {

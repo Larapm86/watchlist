@@ -19,7 +19,6 @@
 	let stickerRevealedForDrop = $state(false);
 	let stickerRevealTimeout: ReturnType<typeof setTimeout>;
 	let showRatingModal = $state(false);
-	let vhsDropHover = $state(false);
 	let starHover = $state(0);
 
 	function formatDropTime(seconds: number): string {
@@ -35,9 +34,9 @@
 	let mouseInCardY = $state(0);
 	let reduceMotion = $state(false);
 
-	const TILT_MAX = 14;
-	const SHIFT_MAX = 12;
-	const LIFT_Y = -12; /* base lift when hovered */
+	const TILT_MAX = 18;
+	const SHIFT_MAX = 14;
+	const LIFT_Y = -16; /* base lift when hovered */
 
 	function getCardHoverStyle(x: number, y: number): string {
 		const tx = x * (SHIFT_MAX / 100);
@@ -325,15 +324,8 @@
 		</div>
 	</div>
 
-	<!-- Drop zone: floating VHS player, bottom center -->
-	<div
-		class="vhs-drop-wrap"
-		onmouseenter={() => (vhsDropHover = true)}
-		onmouseleave={() => (vhsDropHover = false)}
-	>
-		{#if vhsDropHover}
-			<div class="vhs-drop-tooltip" role="tooltip">Drop here to mark as watched</div>
-		{/if}
+	<!-- Drop zone: floating VHS player, bottom right -->
+	<div class="vhs-drop-wrap">
 		<section
 			class="vhs-drop"
 			class:drop-active={cinemaDropHighlight}
@@ -362,7 +354,7 @@
 			<input type="hidden" name="id" value="" />
 		</form>
 		<div class="vhs-player" aria-hidden="true">
-			<svg viewBox="0 0 140 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<svg viewBox="0 0 322 88" fill="none" xmlns="http://www.w3.org/2000/svg">
 				<defs>
 					<linearGradient id="vhsBody" x1="0%" y1="0%" x2="0%" y2="100%">
 						<stop offset="0%" stop-color="#3f3f46" />
@@ -376,34 +368,26 @@
 					<filter id="vhsShadow" x="-15%" y="-10%" width="130%" height="125%">
 						<feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.35" />
 					</filter>
-					<!-- Chroma-style fringing for OSD text (old VCR display look) -->
 					<filter id="vhsChromaText" x="-30%" y="-30%" width="160%" height="160%">
-						<feDropShadow dx="0.4" dy="0" stdDeviation="0.5" flood-color="#1a1a24" flood-opacity="0.5"/>
+						<feDropShadow dx="0.4" dy="0" stdDeviation="0.5" flood-color="#0000CC" flood-opacity="0.45"/>
 						<feDropShadow dx="0" dy="0" stdDeviation="0" flood-color="#e8e8e8"/>
 					</filter>
 				</defs>
 				<!-- Main body -->
-				<rect x="8" y="4" width="124" height="80" rx="6" fill="url(#vhsBody)" filter="url(#vhsShadow)" />
+				<rect x="8" y="4" width="306" height="80" rx="6" fill="url(#vhsBody)" filter="url(#vhsShadow)" />
 				<!-- Bevel / top edge highlight -->
-				<path d="M8 10 L132 10 L124 4 L16 4 Z" fill="#52525b" opacity="0.6" />
+				<path d="M8 10 L318 10 L310 4 L16 4 Z" fill="#52525b" opacity="0.6" />
 				<!-- Tape slot (drop target area) -->
-				<rect x="28" y="14" width="84" height="36" rx="3" fill="url(#vhsSlot)" stroke="#3f3f46" stroke-width="1.5" />
-				<rect x="32" y="18" width="76" height="28" rx="2" fill="#0d0d0f" />
-				<!-- Slot label (pixel/OSD style) -->
-				<text x="70" y="36" text-anchor="middle" fill="#e8e8e8" font-size="16" font-family="VT323, monospace" filter="url(#vhsChromaText)">DROP</text>
-				<!-- Buttons row -->
-				<rect x="24" y="56" width="12" height="10" rx="2" fill="#27272a" stroke="#52525b" stroke-width="0.8" />
-				<rect x="40" y="56" width="12" height="10" rx="2" fill="#27272a" stroke="#52525b" stroke-width="0.8" />
-				<rect x="56" y="56" width="12" height="10" rx="2" fill="#27272a" stroke="#52525b" stroke-width="0.8" />
-				<rect x="72" y="56" width="12" height="10" rx="2" fill="#27272a" stroke="#52525b" stroke-width="0.8" />
-				<rect x="88" y="56" width="12" height="10" rx="2" fill="#27272a" stroke="#52525b" stroke-width="0.8" />
-				<rect x="104" y="56" width="12" height="10" rx="2" fill="#27272a" stroke="#52525b" stroke-width="0.8" />
-				<!-- Digital display -->
-				<rect x="24" y="72" width="92" height="8" rx="2" fill="#0a0a0b" stroke="#3f3f46" stroke-width="0.8" />
-				<text x="70" y="78" text-anchor="middle" class="vhs-display-time" font-size="7" font-family="VT323, monospace">0:00:00</text>
+				<rect x="28" y="14" width="272" height="36" rx="3" fill="url(#vhsSlot)" stroke="#3f3f46" stroke-width="1.5" />
+				<rect x="32" y="18" width="264" height="28" rx="2" fill="#0d0d0f" />
+				<!-- Slot label -->
+				<text x="164" y="36" text-anchor="middle" fill="#e8e8e8" font-size="16" font-family="VT323, monospace" filter="url(#vhsChromaText)">Drag your movies here to mark as watched</text>
+				<!-- Timer screen: same width as slot, uses space of removed buttons; blue LED beside it -->
+				<rect x="28" y="52" width="272" height="24" rx="2" fill="#0a0a0b" stroke="#3f3f46" stroke-width="0.8" />
+				<text x="164" y="67" text-anchor="middle" class="vhs-display-time" font-size="12" font-family="VT323, monospace">0:00:00</text>
 				<!-- Power / record LED -->
-				<circle cx="124" cy="72" r="3" fill="#18181b" stroke="#3f3f46" stroke-width="0.8" />
-				<circle cx="124" cy="72" r="1.5" class="vhs-led-dot" opacity="0.9" />
+				<circle cx="306" cy="64" r="3" fill="#18181b" stroke="#3f3f46" stroke-width="0.8" />
+				<circle cx="306" cy="64" r="1.5" class="vhs-led-dot" opacity="0.9" />
 			</svg>
 		</div>
 	</section>
@@ -624,19 +608,24 @@
 		animation: hero-poster-in 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 		transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
 		transform-style: preserve-3d;
+		transform: translate3d(0, 0, 0); /* base so hover inline transform can transition smoothly */
+		backface-visibility: hidden;
+		will-change: transform;
 	}
 	@keyframes hero-poster-in {
 		from {
 			opacity: 0;
-			transform: scale(0.97);
 		}
 		to {
 			opacity: 1;
-			transform: scale(1);
 		}
 	}
-	/* Scale resets to 1 so hover transform can take over without conflict */
-
+	/* Hover: 3D tilt + shadow from inline style; no transform in keyframes so inline can win */
+	@media (hover: hover) {
+		.poster-card.hero-poster:hover {
+			box-shadow: 0 36px 60px rgba(0, 0, 0, 0.3);
+		}
+	}
 	@media (prefers-reduced-motion: reduce) {
 		.poster-card.hero-poster {
 			animation: none;
@@ -646,77 +635,26 @@
 		}
 	}
 
-	/* VHS player drop zone: floating bottom center, larger for accessibility */
+	/* VHS player drop zone: floating bottom right */
 	.vhs-drop-wrap {
 		position: fixed;
 		bottom: 1.25rem;
-		left: 50%;
-		transform: translateX(-50%);
+		right: 1.25rem;
 		z-index: 40;
-	}
-	.vhs-drop-tooltip {
-		position: absolute;
-		bottom: 100%;
-		left: 50%;
-		transform: translateX(-50%);
-		margin-bottom: 0.5rem;
-		padding: 0.5rem 0.75rem;
-		background: var(--card-bg);
-		color: var(--text);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		font-size: 0.875rem;
-		font-weight: 500;
-		white-space: nowrap;
-		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-		pointer-events: none;
-		animation: vhs-tooltip-in 0.15s ease-out;
-	}
-	@keyframes vhs-tooltip-in {
-		from {
-			opacity: 0;
-			transform: translateX(-50%) translateY(4px);
-		}
-		to {
-			opacity: 1;
-			transform: translateX(-50%) translateY(0);
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.vhs-drop-tooltip {
-			animation: none;
-		}
 	}
 	.vhs-drop {
 		position: relative;
-		bottom: auto;
-		right: auto;
-		width: 500px;
-		height: 165px;
+		width: 338px;
+		height: 138px;
 		display: flex;
 		align-items: flex-end;
-		justify-content: center;
+		justify-content: flex-end;
 		cursor: default;
 		transition: transform 0.2s ease, filter 0.2s ease;
 	}
 	.vhs-drop.drop-active {
-		animation: vhs-drop-pulse 0.9s ease-in-out infinite;
+		transform: scale(1.08);
 		filter: brightness(1.2) drop-shadow(0 6px 20px rgba(0, 0, 0, 0.3));
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.vhs-drop.drop-active {
-			animation: none;
-			transform: scale(1.08);
-		}
-	}
-	@keyframes vhs-drop-pulse {
-		0%,
-		100% {
-			transform: scale(1.05);
-		}
-		50% {
-			transform: scale(1.12);
-		}
 	}
 	.vhs-drop .drop-form {
 		position: absolute;
@@ -728,8 +666,8 @@
 		pointer-events: auto;
 	}
 	.vhs-player {
-		width: 485px;
-		height: 132px;
+		width: 322px;
+		height: 90px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
