@@ -18,18 +18,26 @@ export const load: PageServerLoad = async (event) => {
 			.where(eq(watchlist.userId, user.id))
 			.orderBy(desc(watchlist.createdAt));
 
-		// Normalize so client always gets camelCase; handle both camelCase and snake_case from DB
-		const watchlistData = items.map((row) => {
-			const r = row as Record<string, unknown>;
-			const posterPath = (r.posterPath ?? r.poster_path ?? null) as string | null;
-			return {
-				...row,
-				posterPath: posterPath != null && String(posterPath).trim() !== '' ? String(posterPath).trim() : null,
-				overview: (r.overview ?? null) as string | null,
-				genre: (r.genre ?? null) as string | null,
-				year: (r.year ?? null) as string | null
-			};
-		});
+		// Map rows to camelCase; Neon/driver may return snake_case column names
+		function str(row: Record<string, unknown>, ...keys: string[]): string | null {
+			for (const k of keys) {
+				const v = row[k];
+				if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+			}
+			return null;
+		}
+		const watchlistData = items.map((row: Record<string, unknown>) => ({
+			id: row.id as number,
+			userId: (row.userId ?? row.user_id) as string,
+			title: String(row.title ?? ''),
+			posterPath: str(row, 'posterPath', 'poster_path'),
+			overview: str(row, 'overview'),
+			genre: str(row, 'genre'),
+			year: str(row, 'year'),
+			createdAt: row.createdAt ?? row.created_at,
+			watchedAt: row.watchedAt ?? row.watched_at ?? null,
+			rating: (row.rating ?? null) as string | null
+		}));
 
 		return { watchlist: watchlistData };
 	} catch (err) {

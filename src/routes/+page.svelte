@@ -325,7 +325,7 @@
 		</div>
 	</div>
 
-	<!-- Drop zone: floating VHS player, bottom-right corner -->
+	<!-- Drop zone: floating VHS player, bottom center -->
 	<div
 		class="vhs-drop-wrap"
 		onmouseenter={() => (vhsDropHover = true)}
@@ -646,11 +646,12 @@
 		}
 	}
 
-	/* VHS player drop zone: floating bottom-right corner */
+	/* VHS player drop zone: floating bottom center, larger for accessibility */
 	.vhs-drop-wrap {
 		position: fixed;
 		bottom: 1.25rem;
-		right: 1.25rem;
+		left: 50%;
+		transform: translateX(-50%);
 		z-index: 40;
 	}
 	.vhs-drop-tooltip {
@@ -690,11 +691,11 @@
 		position: relative;
 		bottom: auto;
 		right: auto;
-		width: 260px;
-		height: 132px;
+		width: 500px;
+		height: 165px;
 		display: flex;
 		align-items: flex-end;
-		justify-content: flex-end;
+		justify-content: center;
 		cursor: default;
 		transition: transform 0.2s ease, filter 0.2s ease;
 	}
@@ -727,8 +728,8 @@
 		pointer-events: auto;
 	}
 	.vhs-player {
-		width: 252px;
-		height: 105px;
+		width: 485px;
+		height: 132px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
