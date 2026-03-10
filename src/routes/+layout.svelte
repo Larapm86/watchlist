@@ -140,7 +140,7 @@
 					onclick={() => (addOverlayOpen = true)}
 				>
 					<span class="add-movie-cta-icon" aria-hidden="true">
-						<Plus size={14} />
+						<Plus size={16} />
 					</span>
 					<span class="add-movie-cta-text">Add a movie</span>
 				</button>
@@ -465,85 +465,43 @@
 	.header-actions {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
+		gap: 16px;
 	}
 
-	/* Plus CTA: 33×33 square with rounded corners, grows right-to-left on hover */
+	/* Add movie: text button (matches Filters style) */
 	.add-movie-cta {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		flex-direction: row-reverse;
-		gap: 0;
-		width: 33px;
-		height: 33px;
-		min-width: 33px;
+		gap: 0.4rem;
+		height: auto;
 		margin: 0;
-		padding: 0 7px;
-		font-size: 0.9375rem;
+		padding: 0.4rem 0;
+		font-size: 0.9rem;
 		font-weight: 600;
 		line-height: 1;
-		background: var(--btn-primary-bg);
-		color: var(--btn-primary-text);
-		border: 1px solid var(--border);
-		border-radius: 8px;
+		font-family: inherit;
+		border: none;
+		border-radius: 0;
+		background: none;
+		color: var(--text);
 		cursor: pointer;
-		transition: background 0.25s ease, color 0.25s ease, min-width 0.25s ease, padding 0.25s ease, border-radius 0.25s ease, width 0.25s ease, height 0.25s ease;
-		box-sizing: border-box;
-		overflow: hidden;
+		transition: color 0.2s ease, opacity 0.2s ease;
 	}
-
 	.add-movie-cta:hover {
-		justify-content: flex-end;
-		background: var(--btn-primary-hover);
-		width: auto;
-		min-width: 140px;
-		height: 40px;
-		padding: 0 1rem;
-		gap: 0.5rem;
-		border-radius: 10px;
+		color: var(--link);
+		opacity: 0.95;
 	}
-
 	.add-movie-cta:focus-visible {
 		outline: 3px solid var(--btn-primary-focus);
 		outline-offset: 2px;
 	}
-
 	.add-movie-cta-icon {
 		display: inline-flex;
 		flex-shrink: 0;
-		transition: transform 0.3s ease;
 	}
-
-	.add-movie-cta:hover .add-movie-cta-icon {
-		transform: rotate(90deg);
-	}
-
 	.add-movie-cta-text {
-		display: inline-block;
 		white-space: nowrap;
-		max-width: 0;
-		overflow: hidden;
-		opacity: 0;
-		margin-right: 0;
-		transition: max-width 0.3s ease, opacity 0.25s ease, margin-right 0.25s ease;
-	}
-
-	.add-movie-cta:hover .add-movie-cta-text {
-		max-width: 10em;
-		opacity: 1;
-		margin-right: 0;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.add-movie-cta,
-		.add-movie-cta-icon,
-		.add-movie-cta-text {
-			transition: none;
-		}
-		.add-movie-cta:hover .add-movie-cta-icon {
-			transform: none;
-		}
 	}
 
 	/* Add movie overlay – uses shared --modal-* palette */
@@ -710,7 +668,14 @@
 	}
 
 	.user-menu-trigger:hover {
-		background: transparent;
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.user-menu-trigger:hover .user-avatar,
+	.user-menu-trigger:hover .user-avatar-initials {
+		box-shadow:
+			0 3px 10px rgba(0, 0, 0, 0.4),
+			inset 0 0 0 2px rgba(0, 0, 0, 0.5);
 	}
 
 	.user-menu-trigger:focus-visible {
@@ -719,17 +684,21 @@
 	}
 
 	.user-menu-trigger[aria-expanded='true'] {
-		background: transparent;
+		background: rgba(255, 255, 255, 0.08);
 	}
 
+	/* Avatar: sticker-style (dark mode) – inner outline + shadow */
 	.user-avatar {
 		width: 32px;
 		height: 32px;
 		border-radius: 50%;
 		object-fit: cover;
 		flex-shrink: 0;
-		border: 1px solid var(--border);
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+		border: none;
+		box-shadow:
+			0 2px 8px rgba(0, 0, 0, 0.35),
+			inset 0 0 0 2px rgba(0, 0, 0, 0.5);
+		transition: box-shadow 0.2s ease;
 	}
 	.user-avatar-initials {
 		display: inline-flex;
@@ -743,8 +712,12 @@
 		font-size: 0.8125rem;
 		font-weight: 600;
 		flex-shrink: 0;
-		border: 1px solid var(--border);
-		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 3px rgba(0, 0, 0, 0.2);
+		border: none;
+		box-shadow:
+			0 2px 8px rgba(0, 0, 0, 0.35),
+			inset 0 0 0 2px rgba(0, 0, 0, 0.5),
+			inset 0 1px 0 rgba(255, 255, 255, 0.06);
+		transition: box-shadow 0.2s ease;
 	}
 
 	.user-menu-trigger-label {

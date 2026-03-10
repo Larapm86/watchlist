@@ -1,14 +1,56 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { tick } from 'svelte';
-	import { fade } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import ChevronDown from '$lib/components/icons/ChevronDown.svelte';
 	import X from '$lib/components/icons/X.svelte';
 	import Landing from '$lib/components/landing/Landing.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	let filterStatus = $state<'all' | 'to-watch' | 'watched'>('all');
+	let filterGenre = $state<string>('all');
+	let filtersOpen = $state(false);
+	let statusDropdownOpen = $state(false);
+	let genreDropdownOpen = $state(false);
+	let filtersButtonEl: HTMLButtonElement;
+
+	const list = $derived(data?.watchlist ?? []);
+	const genresFromList = $derived(
+		Array.from(
+			new Set(
+				list.flatMap((item) => {
+					const g = item.genre?.trim();
+					if (!g) return [];
+					return g.split(/\s*,\s*/).filter(Boolean);
+				})
+			)
+		).sort((a, b) => a.localeCompare(b))
+	);
+	const filteredWatchlist = $derived(
+		list.filter((item) => {
+			const isWatched = !!item.watchedAt || optimisticallyWatchedIds.includes(item.id);
+			if (filterStatus === 'watched' && !isWatched) return false;
+			if (filterStatus === 'to-watch' && isWatched) return false;
+			if (filterGenre !== 'all') {
+				const g = item.genre?.trim() ?? '';
+				const genres = g ? g.split(/\s*,\s*/).map((s) => s.trim()) : [];
+				if (!genres.includes(filterGenre)) return false;
+			}
+			return true;
+		})
+	);
+	const hasActiveFilters = $derived(filterStatus !== 'all' || filterGenre !== 'all');
+	const activeFiltersCount = $derived(
+		(filterStatus !== 'all' ? 1 : 0) + (filterGenre !== 'all' ? 1 : 0)
+	);
+	const statusLabel = $derived(
+		filterStatus === 'all' ? 'All' : filterStatus === 'to-watch' ? 'Watchlist' : 'Watched'
+	);
+	const genreLabel = $derived(filterGenre === 'all' ? 'All' : filterGenre);
 
 	let cinemaDropHighlight = $state(false);
 	let dropForm: HTMLFormElement;
@@ -285,14 +327,158 @@
 		</div>
 	{/if}
 
+	<!-- Filters: row 1 = count + Filters button; row 2 (when open) = helper text + Status/Genre dropdowns -->
+	{#if data.watchlist.length > 0}
+		<div class="filters-bar">
+			<!-- Row 1: count + Filters button -->
+			<div class="filters-wrap">
+				<p class="filters-count">
+					{list.length} {list.length === 1 ? 'movie' : 'movies'}
+				</p>
+				<div class="filters-actions">
+					{#if hasActiveFilters}
+						<span
+							class="filters-clear-wrap"
+							in:fade={{ duration: 180, easing: (t) => t * (2 - t) }}
+							out:fade={{ duration: 220, easing: (t) => t * t }}
+						>
+							<button
+								type="button"
+								class="filters-clear-btn"
+								onclick={() => { filterStatus = 'all'; filterGenre = 'all'; }}
+							>
+								Clear filters
+							</button>
+						</span>
+					{/if}
+					<!-- Live region so screen readers hear filter count when it changes -->
+					<div
+						class="sr-only"
+						aria-live="polite"
+						aria-atomic="true"
+						aria-relevant="text"
+					>
+						{#if activeFiltersCount > 0}
+							{activeFiltersCount} filter{activeFiltersCount === 1 ? '' : 's'} active
+						{/if}
+					</div>
+					<button
+						type="button"
+						class="filters-trigger"
+						class:active={hasActiveFilters}
+						aria-expanded={filtersOpen}
+						aria-haspopup="true"
+						aria-controls="filters-options-row"
+						aria-label={activeFiltersCount > 0 ? `Filters, ${activeFiltersCount} active` : 'Filters'}
+						id="filters-trigger"
+						bind:this={filtersButtonEl}
+						onclick={() => (filtersOpen = !filtersOpen)}
+					>
+						<span class="filters-trigger-text">Filters</span>
+						{#if activeFiltersCount > 0}
+							<span
+								class="filters-trigger-badge"
+								aria-hidden="true"
+								in:fade={{ duration: 160, easing: (t) => t * (2 - t) }}
+								out:fade={{ duration: 200, easing: (t) => t * t }}
+							>{activeFiltersCount}</span>
+						{/if}
+						<span class="filters-trigger-chevron" class:open={filtersOpen} aria-hidden="true">
+							<ChevronDown size={16} />
+						</span>
+					</button>
+				</div>
+			</div>
+			<!-- Row 2 (after tapping Filters): helper text + dropdowns -->
+			{#if filtersOpen}
+				<div
+					id="filters-options-row"
+					class="filters-options-row"
+					in:slide={{ duration: 220, easing: (t) => t * (2 - t) }}
+					out:slide={{ duration: 160, easing: (t) => t * t }}
+				>
+					<p class="filters-options-hint">You can filter by status or genre.</p>
+					<div class="filters-dropdowns">
+						<div class="filter-dropdown-wrap">
+							<button
+								type="button"
+								class="filter-dropdown-trigger"
+								aria-expanded={statusDropdownOpen}
+								aria-haspopup="listbox"
+								aria-label="Status filter"
+								onclick={() => {
+									statusDropdownOpen = !statusDropdownOpen;
+									if (statusDropdownOpen) genreDropdownOpen = false;
+								}}
+							>
+								Status: {statusLabel}
+								<ChevronDown size={14} />
+							</button>
+							{#if statusDropdownOpen}
+								<div
+									class="filter-dropdown-menu"
+									role="listbox"
+									in:slide={{ duration: 180, easing: (t) => t * (2 - t) }}
+									out:slide={{ duration: 120, easing: (t) => t * t }}
+								>
+									<button type="button" role="option" class="filter-dropdown-option" class:selected={filterStatus === 'all'} onclick={() => { filterStatus = 'all'; statusDropdownOpen = false; }}>All</button>
+									<button type="button" role="option" class="filter-dropdown-option" class:selected={filterStatus === 'to-watch'} onclick={() => { filterStatus = 'to-watch'; statusDropdownOpen = false; }}>Watchlist</button>
+									<button type="button" role="option" class="filter-dropdown-option" class:selected={filterStatus === 'watched'} onclick={() => { filterStatus = 'watched'; statusDropdownOpen = false; }}>Watched</button>
+								</div>
+							{/if}
+						</div>
+						<div class="filter-dropdown-wrap">
+							<button
+								type="button"
+								class="filter-dropdown-trigger"
+								aria-expanded={genreDropdownOpen}
+								aria-haspopup="listbox"
+								aria-label="Genre filter"
+								onclick={() => {
+									genreDropdownOpen = !genreDropdownOpen;
+									if (genreDropdownOpen) statusDropdownOpen = false;
+								}}
+							>
+								Genre: {genreLabel}
+								<ChevronDown size={14} />
+							</button>
+							{#if genreDropdownOpen}
+								<div
+									class="filter-dropdown-menu filter-dropdown-menu-genres"
+									role="listbox"
+									in:slide={{ duration: 180, easing: (t) => t * (2 - t) }}
+									out:slide={{ duration: 120, easing: (t) => t * t }}
+								>
+									<button type="button" role="option" class="filter-dropdown-option" class:selected={filterGenre === 'all'} onclick={() => { filterGenre = 'all'; genreDropdownOpen = false; }}>All</button>
+									{#each genresFromList as g}
+										<button type="button" role="option" class="filter-dropdown-option" class:selected={filterGenre === g} onclick={() => { filterGenre = g; genreDropdownOpen = false; }}>{g}</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+		{#if statusDropdownOpen || genreDropdownOpen}
+			<div
+				class="filters-backdrop"
+				aria-hidden="true"
+				onclick={() => { statusDropdownOpen = false; genreDropdownOpen = false; }}
+			></div>
+		{/if}
+	{/if}
+
 	<!-- Poster strip: each poster = same hero shape + behavior (tilt, shadow) -->
 	<div class="poster-strip-wrap" use:blockVerticalWheelOnHorizontalScroll>
 		<div class="poster-strip-inner">
 			{#if data.watchlist.length === 0}
 				<p class="empty">No movies yet. Add one from the search bar above.</p>
+			{:else if filteredWatchlist.length === 0}
+				<p class="empty">No movies match the current filters.</p>
 			{:else}
 				<ul class="poster-grid" role="list">
-					{#each data.watchlist as item, i}
+					{#each filteredWatchlist as item, i (item.id)}
 						{@const isWatched = !!item.watchedAt || optimisticallyWatchedIds.includes(item.id)}
 						{@const posterUrl = getPosterUrl(item)}
 						<li
@@ -305,6 +491,8 @@
 							onmouseleave={handleCardMouseLeave}
 							onmousemove={(e) => handleCardMouseMove(e, i)}
 							style="animation-delay: {i * 0.04}s; {hoveredCardIndex === i && !reduceMotion ? getCardHoverStyle(mouseInCardX, mouseInCardY) : ''}"
+							in:fade={{ duration: reduceMotion ? 0 : 260, delay: reduceMotion ? 0 : Math.min(i * 10, 80), easing: reduceMotion ? undefined : (t) => t * (2 - t) }}
+							out:fade={{ duration: reduceMotion ? 0 : 200, easing: reduceMotion ? undefined : (t) => t * t }}
 						>
 							<div class="vhs-case">
 								<div class="vhs-spine" aria-hidden="true"></div>
@@ -642,6 +830,217 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+
+	/* Filters: count left, bordered button right (icon + text + chevron) */
+	.filters-wrap {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+	.filters-count {
+		margin: 0;
+		font-size: 0.9rem;
+		color: var(--text);
+	}
+	.filters-trigger {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		height: auto;
+		padding: 0.4rem 0;
+		font-size: 0.9rem;
+		font-weight: 600;
+		font-family: inherit;
+		line-height: 1;
+		border: none;
+		border-radius: 0;
+		background: none;
+		color: var(--text);
+		cursor: pointer;
+		transition: color 0.2s ease, opacity 0.2s ease;
+	}
+	.filters-trigger:hover {
+		color: var(--link);
+		opacity: 0.95;
+	}
+	.filters-trigger:focus-visible {
+		outline: 3px solid var(--btn-primary-focus, #0f0f14);
+		outline-offset: 2px;
+	}
+	.filters-trigger-text {
+		font-weight: 600;
+	}
+	.filters-trigger-chevron {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition: transform 0.2s ease;
+	}
+	.filters-trigger-chevron.open {
+		transform: rotate(180deg);
+	}
+	.filters-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.filters-clear-wrap {
+		display: inline-flex;
+	}
+	.filters-clear-btn {
+		padding: 0.35rem 0;
+		font-size: 0.9rem;
+		font-weight: 500;
+		font-family: inherit;
+		color: var(--link);
+		background: none;
+		border: none;
+		cursor: pointer;
+		transition: opacity 0.2s ease;
+	}
+	.filters-clear-btn:hover {
+		opacity: 0.9;
+		text-decoration: underline;
+	}
+	.filters-clear-btn:focus-visible {
+		outline: 3px solid var(--btn-primary-focus, #0f0f14);
+		outline-offset: 2px;
+	}
+	.filters-trigger-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		line-height: 1;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.32);
+		color: rgba(255, 255, 255, 0.95);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	.filters-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 9998;
+		background: transparent;
+	}
+	.filters-bar {
+		padding: 0 var(--page-padding-x) 0.75rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
+	.filters-options-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem 1rem;
+		padding-top: 0.75rem;
+		margin-top: 0.5rem;
+		border-top: 1px solid var(--border);
+	}
+	.filters-options-hint {
+		margin: 0;
+		font-size: 0.85rem;
+		color: var(--text-muted);
+	}
+	.filters-dropdowns {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	.filter-dropdown-wrap {
+		position: relative;
+	}
+	.filter-dropdown-trigger {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.4rem;
+		height: 38px;
+		padding: 0 0.75rem 0 1rem;
+		font-size: 0.9rem;
+		font-weight: 500;
+		font-family: inherit;
+		line-height: 1;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: rgba(255, 255, 255, 0.06);
+		color: var(--text);
+		cursor: pointer;
+		transition: background 0.2s ease, border-color 0.2s ease;
+	}
+	.filter-dropdown-trigger:hover {
+		background: rgba(255, 255, 255, 0.1);
+		border-color: var(--input-border);
+	}
+	.filter-dropdown-trigger:focus-visible {
+		outline: 3px solid var(--btn-primary-focus, #0f0f14);
+		outline-offset: 2px;
+	}
+	.filter-dropdown-menu {
+		position: absolute;
+		top: calc(100% + 0.35rem);
+		left: 0;
+		z-index: 9999;
+		min-width: 100%;
+		padding: 0.35rem;
+		background: var(--modal-bg);
+		border: 1px solid var(--modal-border);
+		border-radius: 8px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+	}
+	.filter-dropdown-menu-genres {
+		max-height: 200px;
+		overflow-y: auto;
+	}
+	.filter-dropdown-option {
+		display: block;
+		width: 100%;
+		text-align: left;
+		padding: 0.5rem 0.75rem;
+		font-size: 0.9rem;
+		font-family: inherit;
+		font-weight: 500;
+		color: var(--text);
+		background: none;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: background 0.2s ease;
+	}
+	.filter-dropdown-option:hover {
+		background: rgba(255, 255, 255, 0.1);
+	}
+	.filter-dropdown-option.selected {
+		background: rgba(255, 255, 255, 0.15);
+		color: var(--link);
+	}
+	.filter-dropdown-option:focus-visible {
+		outline: none;
+		background: rgba(255, 255, 255, 0.1);
 	}
 
 	/* Desktop: fill main without causing vertical scroll */
