@@ -472,7 +472,7 @@
 	.add-movie-cta {
 		display: inline-flex;
 		align-items: center;
-		justify-content: flex-end;
+		justify-content: center;
 		flex-direction: row-reverse;
 		gap: 0;
 		width: 33px;
@@ -494,6 +494,7 @@
 	}
 
 	.add-movie-cta:hover {
+		justify-content: flex-end;
 		background: var(--btn-primary-hover);
 		width: auto;
 		min-width: 140px;
