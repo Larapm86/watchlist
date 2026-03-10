@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { tick } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
@@ -20,6 +21,58 @@
 	let stickerRevealTimeout: ReturnType<typeof setTimeout>;
 	let showRatingModal = $state(false);
 	let starHover = $state(0);
+	let ratingModalEl: HTMLDivElement;
+
+	function getRatingModalFocusables(): HTMLElement[] {
+		if (!ratingModalEl) return [];
+		return Array.from(
+			ratingModalEl.querySelectorAll<HTMLElement>(
+				'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+			)
+		).filter((el) => el.tabIndex !== -1);
+	}
+
+	function closeRatingModal() {
+		showRatingModal = false;
+		lastDroppedId = 0;
+		starHover = 0;
+	}
+
+	function handleRatingModalKeydown(e: KeyboardEvent) {
+		if (!showRatingModal) return;
+		if (e.key === 'Escape') {
+			closeRatingModal();
+			e.preventDefault();
+			return;
+		}
+		if (e.key !== 'Tab') return;
+		const focusables = getRatingModalFocusables();
+		if (focusables.length === 0) return;
+		const first = focusables[0];
+		const last = focusables[focusables.length - 1];
+		const target = e.target as HTMLElement;
+		if (e.shiftKey) {
+			if (target === first) {
+				e.preventDefault();
+				last.focus();
+			}
+		} else {
+			if (target === last) {
+				e.preventDefault();
+				first.focus();
+			}
+		}
+	}
+
+	$effect(() => {
+		if (!showRatingModal) return;
+		tick().then(() => {
+			const focusables = getRatingModalFocusables();
+			focusables[0]?.focus();
+		});
+		document.addEventListener('keydown', handleRatingModalKeydown, true);
+		return () => document.removeEventListener('keydown', handleRatingModalKeydown, true);
+	});
 
 	function formatDropTime(seconds: number): string {
 		const s = Math.max(0, seconds);
@@ -176,12 +229,18 @@
 		{@const starCopy = starHover <= 0 ? 'How was it? Tap a star to rate.' : starHover <= 2 ? 'Not for me — didn\'t love it.' : starHover === 3 ? 'It was okay — middle of the road.' : 'Loved it! — really enjoyed this one.'}
 		<div
 			class="rating-modal-backdrop"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="rating-modal-title"
-			onclick={() => { showRatingModal = false; lastDroppedId = 0; starHover = 0; }}
+			aria-hidden="false"
+			onclick={closeRatingModal}
 		>
-			<div class="rating-modal" onclick={(e) => e.stopPropagation()}>
+			<div
+				class="rating-modal"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="rating-modal-title"
+				aria-describedby="rating-modal-copy"
+				bind:this={ratingModalEl}
+				onclick={(e) => e.stopPropagation()}
+			>
 				<h2 id="rating-modal-title" class="rating-modal-title">Mark your thoughts for this movie:</h2>
 				{#if ratingMovie}
 					<p class="rating-modal-movie">{ratingMovie.title}</p>
@@ -200,8 +259,7 @@
 								return async ({ result, update }) => {
 									await update();
 									await invalidateAll();
-									showRatingModal = false;
-									lastDroppedId = 0;
+									closeRatingModal();
 								};
 							}}
 							class="rating-star-form"
@@ -220,7 +278,7 @@
 						</form>
 					{/each}
 				</div>
-				<p class="rating-modal-copy">{starCopy}</p>
+				<p id="rating-modal-copy" class="rating-modal-copy">{starCopy}</p>
 			</div>
 		</div>
 	{/if}
@@ -260,10 +318,10 @@
 											<defs>
 												<path id="sticker-arc-{item.id}" d="M 8 20 A 12 12 0 0 1 32 20"/>
 											</defs>
-											<text fill="#1a1a1a" font-family="system-ui, sans-serif" font-size="8" font-weight="700">
+											<text fill="var(--sticker-text)" font-family="VT323, monospace" font-size="10" font-weight="700">
 												<textPath href="#sticker-arc-{item.id}" startOffset="50%" text-anchor="middle">Watched</textPath>
 											</text>
-											<text x="20" y="20" fill="#1a1a1a" font-family="system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(90 20 20)">
+											<text x="20" y="20.6" fill="var(--sticker-text)" font-family="VT323, monospace" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(90 20 20)">
 												{stickerRating === 'good' ? ':)' : stickerRating === 'bad' ? ':(' : ':/'}
 											</text>
 										</svg>
@@ -354,7 +412,14 @@
 			<input type="hidden" name="id" value="" />
 		</form>
 		<div class="vhs-player" aria-hidden="true">
-			<svg viewBox="0 0 322 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<!-- Scrolling slot text: HTML overlay so it stays inside black band and loops seamlessly -->
+			<div class="vhs-slot-text-overlay" aria-hidden="true">
+				<div class="vhs-slot-text-wrap">
+					<span class="vhs-slot-text">Drag and drop your movies here to mark as watched</span>
+					<span class="vhs-slot-text">Drag and drop your movies here to mark as watched</span>
+				</div>
+			</div>
+			<svg viewBox="0 0 420 88" fill="none" xmlns="http://www.w3.org/2000/svg">
 				<defs>
 					<linearGradient id="vhsBody" x1="0%" y1="0%" x2="0%" y2="100%">
 						<stop offset="0%" stop-color="#3f3f46" />
@@ -374,20 +439,18 @@
 					</filter>
 				</defs>
 				<!-- Main body -->
-				<rect x="8" y="4" width="306" height="80" rx="6" fill="url(#vhsBody)" filter="url(#vhsShadow)" />
+				<rect x="8" y="4" width="404" height="80" rx="6" fill="url(#vhsBody)" filter="url(#vhsShadow)" />
 				<!-- Bevel / top edge highlight -->
-				<path d="M8 10 L318 10 L310 4 L16 4 Z" fill="#52525b" opacity="0.6" />
+				<path d="M8 10 L416 10 L412 4 L16 4 Z" fill="#52525b" opacity="0.6" />
 				<!-- Tape slot (drop target area) -->
-				<rect x="28" y="14" width="272" height="36" rx="3" fill="url(#vhsSlot)" stroke="#3f3f46" stroke-width="1.5" />
-				<rect x="32" y="18" width="264" height="28" rx="2" fill="#0d0d0f" />
-				<!-- Slot label -->
-				<text x="164" y="36" text-anchor="middle" fill="#e8e8e8" font-size="16" font-family="VT323, monospace" filter="url(#vhsChromaText)">Drag your movies here to mark as watched</text>
-				<!-- Timer screen: same width as slot, uses space of removed buttons; blue LED beside it -->
-				<rect x="28" y="52" width="272" height="24" rx="2" fill="#0a0a0b" stroke="#3f3f46" stroke-width="0.8" />
-				<text x="164" y="67" text-anchor="middle" class="vhs-display-time" font-size="12" font-family="VT323, monospace">0:00:00</text>
+				<rect x="28" y="14" width="340" height="36" rx="3" fill="url(#vhsSlot)" stroke="#3f3f46" stroke-width="1.5" />
+				<rect x="32" y="18" width="332" height="28" rx="2" fill="#0d0d0f" />
+				<!-- Timer screen: same width as slot; blue LED beside it -->
+				<rect x="28" y="52" width="340" height="24" rx="2" fill="#0a0a0b" stroke="#3f3f46" stroke-width="0.8" />
+				<text x="198" y="67" text-anchor="middle" class="vhs-display-time" font-size="12" font-family="VT323, monospace">0:00:00</text>
 				<!-- Power / record LED -->
-				<circle cx="306" cy="64" r="3" fill="#18181b" stroke="#3f3f46" stroke-width="0.8" />
-				<circle cx="306" cy="64" r="1.5" class="vhs-led-dot" opacity="0.9" />
+				<circle cx="376" cy="64" r="3" fill="#18181b" stroke="#3f3f46" stroke-width="0.8" />
+				<circle cx="376" cy="64" r="1.5" class="vhs-led-dot" opacity="0.9" />
 			</svg>
 		</div>
 	</section>
@@ -478,12 +541,13 @@
 		pointer-events: none;
 	}
 
-	/* Rating modal after drop transition */
+	/* Rating modal – uses shared --modal-* palette (same as add-movie overlay) */
 	.rating-modal-backdrop {
 		position: fixed;
 		inset: 0;
 		z-index: 10001;
-		background: rgba(0, 0, 0, 0.6);
+		background: var(--modal-backdrop);
+		backdrop-filter: blur(6px);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -495,25 +559,25 @@
 		to { opacity: 1; }
 	}
 	.rating-modal {
-		background: #12121a;
-		border: 1px solid #252538;
+		background: var(--modal-bg);
+		border: 1px solid var(--modal-border);
 		border-radius: 12px;
 		padding: 1.5rem 2rem;
 		max-width: 400px;
 		width: 100%;
-		box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 	}
 	.rating-modal-title {
 		margin: 0 0 0.25rem 0;
 		font-size: 1.25rem;
 		font-weight: 600;
-		color: #e8e8f0;
+		color: var(--modal-text);
 		white-space: nowrap;
 	}
 	.rating-modal-movie {
 		margin: 0 0 1rem 0;
 		font-size: 0.95rem;
-		color: #9090a0;
+		color: var(--modal-text-muted);
 	}
 	.rating-stars-wrap {
 		display: flex;
@@ -534,7 +598,7 @@
 		padding: 0;
 		border: none;
 		background: transparent;
-		color: #3f3f46;
+		color: var(--modal-text-muted);
 		font-size: 1.75rem;
 		cursor: pointer;
 		transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
@@ -546,6 +610,10 @@
 	}
 	.rating-star-btn.star-hovered {
 		color: #eab308;
+	}
+	.rating-star-btn:focus-visible {
+		outline: 2px solid var(--modal-focus-border);
+		outline-offset: 2px;
 	}
 	.rating-star-btn:active {
 		transform: scale(0.95);
@@ -560,7 +628,7 @@
 	.rating-modal-copy {
 		margin: 0;
 		font-size: 0.9rem;
-		color: #9090a0;
+		color: var(--modal-text-muted);
 		text-align: center;
 		line-height: 1.4;
 		min-height: 2.8em;
@@ -644,7 +712,7 @@
 	}
 	.vhs-drop {
 		position: relative;
-		width: 338px;
+		width: 436px;
 		height: 138px;
 		display: flex;
 		align-items: flex-end;
@@ -666,7 +734,8 @@
 		pointer-events: auto;
 	}
 	.vhs-player {
-		width: 322px;
+		position: relative;
+		width: 420px;
 		height: 90px;
 		display: flex;
 		align-items: center;
@@ -677,6 +746,51 @@
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
+	}
+	/* Slot text: overlay aligned to black band; player 420×90, SVG viewBox 420×88 (1px letterbox top) */
+	.vhs-slot-text-overlay {
+		position: absolute;
+		left: 7.62%;
+		top: 21.11%;
+		width: 79.05%;
+		height: 31.11%;
+		overflow: hidden;
+		pointer-events: none;
+		border-radius: 2px;
+	}
+	.vhs-slot-text-wrap {
+		display: flex;
+		flex-wrap: nowrap;
+		white-space: nowrap;
+		height: 100%;
+		align-items: center;
+		width: 200%;
+		animation: vhs-text-scroll 20s linear infinite;
+	}
+	.vhs-slot-text {
+		flex: 0 0 50%;
+		width: 50%;
+		display: inline-block;
+		text-align: center;
+		font-family: VT323, monospace;
+		font-size: 16px;
+		color: #e8e8e8;
+		line-height: 1;
+		text-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
+	}
+	/* Move by one panel (50% of wrap) so as text exits left, the duplicate enters from right */
+	@keyframes vhs-text-scroll {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(-50%);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.vhs-slot-text-wrap {
+			animation: none;
+		}
 	}
 	.vhs-player :global(.vhs-display-time),
 	.vhs-player :global(.vhs-led-dot) {
@@ -882,6 +996,7 @@
 			0 0 0 2px #fff,
 			0 3px 12px rgba(0, 0, 0, 0.3),
 			0 1px 4px rgba(0, 0, 0, 0.18),
+			inset 0 0 0 2px var(--sticker-outline, var(--sticker-fill, #333)),
 			inset 0 2px 4px rgba(255, 255, 255, 0.35),
 			inset 0 -1px 2px rgba(0, 0, 0, 0.1);
 		transform: rotate(-8deg);
@@ -895,17 +1010,23 @@
 		border-radius: 50%;
 	}
 
+	/* Good: green sticker → dark green outline + text (WCAG AA) */
 	.poster-watched-sticker.sticker-good {
 		--sticker-fill: #22c55e;
-		--sticker-text: #fff;
+		--sticker-outline: #14532d;
+		--sticker-text: #14532d;
 	}
+	/* Average: purple sticker → dark purple outline + text */
 	.poster-watched-sticker.sticker-average {
 		--sticker-fill: #7c3aed;
-		--sticker-text: #fff;
+		--sticker-outline: #4c1d95;
+		--sticker-text: #4c1d95;
 	}
+	/* Bad: yellow sticker → dark amber outline + text */
 	.poster-watched-sticker.sticker-bad {
 		--sticker-fill: #eab308;
-		--sticker-text: #1a1a1a;
+		--sticker-outline: #713f12;
+		--sticker-text: #713f12;
 	}
 
 	.poster-watched-sticker {
@@ -972,6 +1093,10 @@
 	}
 
 	.overlay-actions {
+		position: absolute;
+		top: 0.5rem;
+		left: 50%;
+		transform: translateX(-50%);
 		display: flex;
 		align-items: center;
 		justify-content: center;

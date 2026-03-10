@@ -11,7 +11,61 @@
 	let { data, children }: { data: LayoutData; children: any } = $props();
 	let userMenuOpen = $state(false);
 	let userMenuWrap: HTMLDivElement;
+	let addOverlayOpen = $state(false);
+	let addOverlayInput: HTMLInputElement;
+	let addOverlayPanel: HTMLDivElement;
+	let addMovieCtaRef: HTMLButtonElement;
+	let addOverlayPreviousFocus: HTMLElement | null = null;
 	let addFormSubmitting = $state(false);
+
+	function getAddOverlayFocusables(): HTMLElement[] {
+		if (!addOverlayPanel) return [];
+		return Array.from(
+			addOverlayPanel.querySelectorAll<HTMLElement>(
+				'input:not([disabled]), button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+			)
+		).filter((el) => el.tabIndex !== -1);
+	}
+
+	function handleAddOverlayKeydown(e: KeyboardEvent) {
+		if (!addOverlayOpen) return;
+		if (e.key === 'Escape') {
+			closeAddOverlay();
+			addOverlayPreviousFocus?.focus();
+			e.preventDefault();
+			return;
+		}
+		if (e.key !== 'Tab') return;
+		const focusables = getAddOverlayFocusables();
+		if (focusables.length === 0) return;
+		const first = focusables[0];
+		const last = focusables[focusables.length - 1];
+		const target = e.target as HTMLElement;
+		if (e.shiftKey) {
+			if (target === first) {
+				e.preventDefault();
+				last.focus();
+			}
+		} else {
+			if (target === last) {
+				e.preventDefault();
+				first.focus();
+			}
+		}
+	}
+
+	$effect(() => {
+		if (!addOverlayOpen) return;
+		addOverlayPreviousFocus = document.activeElement as HTMLElement | null;
+		const t = setTimeout(() => {
+			addOverlayInput?.focus();
+		}, 50);
+		document.addEventListener('keydown', handleAddOverlayKeydown, true);
+		return () => {
+			clearTimeout(t);
+			document.removeEventListener('keydown', handleAddOverlayKeydown, true);
+		};
+	});
 
 	onMount(() => {
 		document.documentElement.setAttribute('data-theme', 'dark');
@@ -21,6 +75,12 @@
 		if (userMenuOpen && userMenuWrap && !userMenuWrap.contains(e.target as Node)) {
 			userMenuOpen = false;
 		}
+	}
+
+	function closeAddOverlay() {
+		addOverlayOpen = false;
+		addFormMessage.set(null);
+		requestAnimationFrame(() => addOverlayPreviousFocus?.focus());
 	}
 
 	function userInitials(user: { name?: string | null; email: string }) {
@@ -57,85 +117,53 @@
 			<span class="tagline">Curate. Queue. Watch.</span>
 		</div>
 		{#if data.user}
-			<div class="header-add-wrap">
-				<form
-					method="post"
-					action="/?/add"
-					use:enhance={() => {
-						addFormSubmitting = true;
-						addFormMessage.set(null);
-						return async ({ result, update }) => {
-							try {
-								if (result.type === 'failure' && result.data?.message) {
-									addFormMessage.set(result.data.message as string);
-								} else {
-									addFormMessage.set(null);
-								}
-								await update();
-								await invalidateAll();
-							} catch (e) {
-								addFormMessage.set('Something went wrong. Please try again.');
-							} finally {
-								addFormSubmitting = false;
-							}
-						};
-					}}
-					class="header-add-form"
-					role="search"
-					aria-label="Add movie to watchlist"
-				>
-					<input
-						type="text"
-						name="title"
-						placeholder="Add a movie…"
-						required
-						aria-label="Movie title"
-						autocomplete="off"
-						class="header-add-input"
-						oninput={() => addFormMessage.set(null)}
-						disabled={addFormSubmitting}
-					/>
-					<button type="submit" class="header-add-btn" title="Add movie" disabled={addFormSubmitting}>
-						<Plus size={18} />
-						<span>Add</span>
-					</button>
-				</form>
-				{#if $addFormMessage}
-					<p class="header-add-error" role="alert">{$addFormMessage}</p>
-				{/if}
-			</div>
-			<div class="user-menu-wrap" bind:this={userMenuWrap}>
+			<div class="header-actions">
 				<button
 					type="button"
-					class="user-menu-trigger"
-					title={data.user.email}
-					aria-expanded={userMenuOpen}
-					aria-haspopup="true"
-					aria-controls="user-menu"
-					id="user-menu-trigger"
-					onclick={() => (userMenuOpen = !userMenuOpen)}
+					class="add-movie-cta"
+					title="Add a movie"
+					aria-label="Add a movie"
+					bind:this={addMovieCtaRef}
+					onclick={() => (addOverlayOpen = true)}
 				>
-					{#if data.user.image}
-						<img src={data.user.image} alt="" class="user-avatar" width="28" height="28" />
-					{:else}
-						<span class="user-avatar user-avatar-initials" aria-hidden="true">{userInitials(data.user)}</span>
-					{/if}
+					<span class="add-movie-cta-icon" aria-hidden="true">
+						<Plus size={18} />
+					</span>
+					<span class="add-movie-cta-text">Add a movie</span>
 				</button>
-				{#if userMenuOpen}
-					<div
-						class="user-menu"
-						id="user-menu"
-						role="menu"
-						aria-labelledby="user-menu-trigger"
+				<div class="user-menu-wrap" bind:this={userMenuWrap}>
+					<button
+						type="button"
+						class="user-menu-trigger"
+						title={data.user.email}
+						aria-expanded={userMenuOpen}
+						aria-haspopup="true"
+						aria-controls="user-menu"
+						id="user-menu-trigger"
+						onclick={() => (userMenuOpen = !userMenuOpen)}
 					>
-						<form method="post" action="/demo/better-auth?/signOut" class="user-menu-item-form" role="none">
-							<button type="submit" class="user-menu-item" role="menuitem" title="Sign out">
-								<LogOut size={18} />
-								Sign out
-							</button>
-						</form>
-					</div>
-				{/if}
+						{#if data.user.image}
+							<img src={data.user.image} alt="" class="user-avatar" width="32" height="32" />
+						{:else}
+							<span class="user-avatar user-avatar-initials" aria-hidden="true">{userInitials(data.user)}</span>
+						{/if}
+					</button>
+					{#if userMenuOpen}
+						<div
+							class="user-menu"
+							id="user-menu"
+							role="menu"
+							aria-labelledby="user-menu-trigger"
+						>
+							<form method="post" action="/demo/better-auth?/signOut" class="user-menu-item-form" role="none">
+								<button type="submit" class="user-menu-item" role="menuitem" title="Sign out">
+									<LogOut size={18} />
+									Sign out
+								</button>
+							</form>
+						</div>
+					{/if}
+				</div>
 			</div>
 		{:else}
 			<a href="/demo/better-auth/login" class="login-link">Log in</a>
@@ -148,6 +176,66 @@
 			onclick={() => (userMenuOpen = false)}
 			aria-hidden="true"
 		></div>
+	{/if}
+
+	{#if addOverlayOpen}
+		<div
+			class="add-overlay-backdrop"
+			onclick={closeAddOverlay}
+			aria-hidden="true"
+		></div>
+		<div
+			class="add-overlay-panel"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="add-movie-dialog-title"
+			aria-describedby={$addFormMessage ? 'add-movie-hint add-movie-error' : 'add-movie-hint'}
+			bind:this={addOverlayPanel}
+		>
+			<h2 id="add-movie-dialog-title" class="sr-only">Add a movie</h2>
+			<form
+				method="post"
+				action="/?/add"
+				use:enhance={() => {
+					addFormSubmitting = true;
+					addFormMessage.set(null);
+					return async ({ result, update }) => {
+						try {
+							if (result.type === 'failure' && result.data?.message) {
+								addFormMessage.set(result.data.message as string);
+							} else {
+								addFormMessage.set(null);
+								closeAddOverlay();
+							}
+							await update();
+							await invalidateAll();
+						} catch (e) {
+							addFormMessage.set('Something went wrong. Please try again.');
+						} finally {
+							addFormSubmitting = false;
+						}
+					};
+				}}
+				class="add-overlay-form"
+			>
+				<input
+					type="text"
+					name="title"
+					placeholder="e.g. Past Lives, Mulan, Wonder Woman"
+					required
+					aria-label="Movie title"
+					autocomplete="off"
+					class="add-overlay-input"
+					bind:this={addOverlayInput}
+					oninput={() => addFormMessage.set(null)}
+					disabled={addFormSubmitting}
+				/>
+				<p id="add-movie-hint" class="add-overlay-hint">Type a movie title and press Enter to add it.</p>
+				{#if $addFormMessage}
+					<p class="add-overlay-error" id="add-movie-error" role="alert">{$addFormMessage}</p>
+				{/if}
+			</form>
+		</div>
 	{/if}
 
 	<main class="main">
@@ -206,6 +294,17 @@
 		--float-menu-error: #f87171;
 		--vhs-blue: #3a3a4a;
 		--neon-blue: #5c7cff;
+		/* Shared modal/overlay palette (dark mode) */
+		--modal-bg: #12121a;
+		--modal-border: #252538;
+		--modal-backdrop: rgba(8, 8, 12, 0.85);
+		--modal-text: #e8e8f0;
+		--modal-text-muted: #9090a0;
+		--modal-input-bg: #16161d;
+		--modal-input-border: #252530;
+		--modal-focus-border: #5a5a6a;
+		--modal-focus-ring: rgba(90, 90, 106, 0.25);
+		--modal-error: #f87171;
 	}
 
 	:global(body) {
@@ -280,34 +379,129 @@
 		z-index: 101;
 	}
 
-	.header-add-wrap {
+	.header-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	/* Plus CTA: same size as avatar (32×32), square with rounded corners, grows right-to-left on hover */
+	.add-movie-cta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: flex-end;
+		flex-direction: row-reverse;
+		gap: 0;
+		width: 32px;
+		height: 32px;
+		min-width: 32px;
+		margin: 0;
+		padding: 0 8px;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		line-height: 1;
+		background: var(--btn-primary-bg);
+		color: var(--card-bg);
+		border: 1px solid transparent;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: background 0.25s ease, color 0.25s ease, min-width 0.25s ease, padding 0.25s ease, border-radius 0.25s ease, width 0.25s ease, height 0.25s ease;
+		box-sizing: border-box;
+		overflow: hidden;
+	}
+
+	.add-movie-cta:hover {
+		background: var(--btn-primary-hover);
+		width: auto;
+		min-width: 140px;
+		height: 40px;
+		padding: 0 1rem;
+		gap: 0.5rem;
+		border-radius: 10px;
+	}
+
+	.add-movie-cta:focus-visible {
+		outline: 2px solid var(--link);
+		outline-offset: 2px;
+	}
+
+	.add-movie-cta-icon {
+		display: inline-flex;
+		flex-shrink: 0;
+		transition: transform 0.3s ease;
+	}
+
+	.add-movie-cta:hover .add-movie-cta-icon {
+		transform: rotate(90deg);
+	}
+
+	.add-movie-cta-text {
+		display: inline-block;
+		white-space: nowrap;
+		max-width: 0;
+		overflow: hidden;
+		opacity: 0;
+		margin-right: 0;
+		transition: max-width 0.3s ease, opacity 0.25s ease, margin-right 0.25s ease;
+	}
+
+	.add-movie-cta:hover .add-movie-cta-text {
+		max-width: 10em;
+		opacity: 1;
+		margin-right: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.add-movie-cta,
+		.add-movie-cta-icon,
+		.add-movie-cta-text {
+			transition: none;
+		}
+		.add-movie-cta:hover .add-movie-cta-icon {
+			transform: none;
+		}
+	}
+
+	/* Add movie overlay – uses shared --modal-* palette */
+	.add-overlay-backdrop {
+		position: fixed;
+		inset: 0;
+		background: var(--modal-backdrop);
+		z-index: 200;
+		backdrop-filter: blur(6px);
+	}
+
+	.add-overlay-panel {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 90%;
+		max-width: 420px;
+		padding: 1.5rem;
+		background: var(--modal-bg);
+		border: 1px solid var(--modal-border);
+		border-radius: 12px;
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+		z-index: 201;
+	}
+
+	.add-overlay-form {
 		display: flex;
 		flex-direction: column;
-		align-items: stretch;
-		gap: 0.35rem;
-		flex: 1;
-		min-width: 0;
-		max-width: 360px;
+		gap: 0.75rem;
 	}
 
-	.header-add-form {
-		display: flex;
-		align-items: stretch;
-		gap: 0.5rem;
-		height: 40px;
-	}
-
-	.header-add-input {
-		flex: 1;
-		min-width: 0;
-		height: 100%;
+	.add-overlay-input {
+		width: 100%;
+		height: 44px;
 		margin: 0;
 		padding: 0 0.75rem;
 		font-size: 0.9375rem;
 		line-height: 1;
-		color: var(--text);
-		background: var(--input-bg);
-		border: 1px solid var(--border);
+		color: var(--modal-text);
+		background: var(--modal-input-bg);
+		border: 1px solid var(--modal-input-border);
 		border-radius: 10px;
 		box-sizing: border-box;
 		-webkit-appearance: none;
@@ -315,59 +509,43 @@
 		transition: border-color 0.2s ease, background 0.2s ease;
 	}
 
-	.header-add-input::placeholder {
-		color: var(--text-muted);
+	.add-overlay-input::placeholder {
+		color: var(--modal-text-muted);
 	}
 
-	.header-add-input:hover {
-		border-color: var(--input-border);
+	.add-overlay-input:hover {
+		border-color: #2e2e3a;
 	}
 
-	.header-add-input:focus {
+	.add-overlay-input:focus {
 		outline: none;
-		border-color: var(--link);
-		box-shadow: 0 0 0 2px var(--focus-ring);
+		border-color: var(--modal-focus-border);
+		box-shadow: 0 0 0 2px var(--modal-focus-ring);
 	}
 
-	.header-add-btn {
-		flex-shrink: 0;
-		height: 100%;
+	.add-overlay-hint {
 		margin: 0;
-		padding: 0 1rem;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 0.4rem;
-		font-size: 0.9375rem;
-		font-weight: 600;
-		line-height: 1;
-		background: var(--btn-primary-bg);
-		color: var(--card-bg);
-		border: 1px solid transparent;
-		border-radius: 10px;
-		cursor: pointer;
-		transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
-		box-sizing: border-box;
+		font-size: 0.875rem;
+		color: var(--modal-text-muted);
 	}
 
-	.header-add-btn:hover {
-		background: var(--btn-primary-hover);
-	}
-
-	.header-add-btn:focus-visible {
-		outline: 2px solid var(--link);
-		outline-offset: 2px;
-	}
-	.header-add-btn:disabled {
-		opacity: 0.7;
-		cursor: not-allowed;
-	}
-
-	.header-add-error {
+	.add-overlay-error {
 		margin: 0;
 		font-size: 0.8125rem;
-		color: var(--error);
+		color: var(--modal-error);
 		padding: 0.25rem 0;
+	}
+
+	.sr-only {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
 	}
 
 	.brand {
@@ -430,53 +608,59 @@
 		flex-shrink: 0;
 	}
 
+	/* Avatar trigger: no outline, just the avatar */
 	.user-menu-trigger {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.375rem;
+		justify-content: center;
 		margin: 0;
-		padding: 0.5rem 0.6rem;
-		font-size: 0.875rem;
+		padding: 0;
 		font-family: inherit;
-		color: var(--text-muted);
+		color: var(--text);
 		background: transparent;
-		border: 1px solid transparent;
-		border-radius: 8px;
+		border: none;
+		border-radius: 50%;
 		cursor: pointer;
-		transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+		transition: background 0.2s ease, transform 0.2s ease;
+		box-sizing: border-box;
 	}
 
 	.user-menu-trigger:hover {
-		color: var(--text);
-		background: var(--input-bg);
-		border-color: var(--border);
+		background: transparent;
+	}
+
+	.user-menu-trigger:focus-visible {
+		outline: 2px solid var(--link);
+		outline-offset: 2px;
 	}
 
 	.user-menu-trigger[aria-expanded='true'] {
-		color: var(--text);
-		background: var(--input-bg);
-		border-color: var(--border);
+		background: transparent;
 	}
 
 	.user-avatar {
-		width: 28px;
-		height: 28px;
+		width: 32px;
+		height: 32px;
 		border-radius: 50%;
 		object-fit: cover;
 		flex-shrink: 0;
+		border: 1px solid var(--border);
+		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 	}
 	.user-avatar-initials {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 28px;
-		height: 28px;
+		width: 32px;
+		height: 32px;
 		border-radius: 50%;
-		background: var(--neon-blue);
-		color: #fff;
-		font-size: 0.75rem;
+		background: linear-gradient(145deg, var(--input-bg) 0%, var(--border) 100%);
+		color: var(--text);
+		font-size: 0.8125rem;
 		font-weight: 600;
 		flex-shrink: 0;
+		border: 1px solid var(--border);
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 3px rgba(0, 0, 0, 0.2);
 	}
 
 	.user-menu-trigger-label {
@@ -556,13 +740,32 @@
 	}
 
 	.login-link {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 40px;
+		padding: 0 1rem;
 		font-size: 0.9375rem;
-		color: var(--link);
+		font-weight: 600;
+		color: var(--text);
 		text-decoration: none;
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+		box-sizing: border-box;
 	}
 
 	.login-link:hover {
-		text-decoration: underline;
+		background: var(--input-bg);
+		border-color: var(--input-border);
+		color: var(--text);
+		text-decoration: none;
+	}
+
+	.login-link:focus-visible {
+		outline: 2px solid var(--link);
+		outline-offset: 2px;
 	}
 
 	.main {

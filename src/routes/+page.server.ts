@@ -12,7 +12,7 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	try {
-		// Explicit select so posterPath and all columns have a guaranteed shape (Neon/driver can return snake_case)
+		// Explicit select so result shape is predictable (Neon/driver can return snake_case)
 		const items = await db
 			.select({
 				id: watchlist.id,
@@ -30,7 +30,7 @@ export const load: PageServerLoad = async (event) => {
 			.where(eq(watchlist.userId, user.id))
 			.orderBy(desc(watchlist.createdAt));
 
-		// Normalize to camelCase and handle drivers that return snake_case keys
+		// Normalize: support both camelCase (Drizzle) and snake_case (raw driver)
 		function str(row: Record<string, unknown>, ...keys: string[]): string | null {
 			for (const k of keys) {
 				const v = row[k];
@@ -38,25 +38,52 @@ export const load: PageServerLoad = async (event) => {
 			}
 			return null;
 		}
+		function num(row: Record<string, unknown>, ...keys: string[]): number | null {
+			for (const k of keys) {
+				const v = row[k];
+				if (v === undefined || v === null) continue;
+				const n = typeof v === 'number' ? v : parseInt(String(v), 10);
+				if (!Number.isNaN(n)) return n;
+			}
+			return null;
+		}
+		function date(row: Record<string, unknown>, ...keys: string[]): Date | null {
+			for (const k of keys) {
+				const v = row[k];
+				if (v instanceof Date) return v;
+				if (v !== undefined && v !== null && String(v).trim() !== '') {
+					const d = new Date(String(v));
+					if (!Number.isNaN(d.getTime())) return d;
+				}
+			}
+			return null;
+		}
+
 		const watchlistData = items.map((row: Record<string, unknown>) => ({
-			id: row.id as number,
-			userId: (row.userId ?? row.user_id) as string,
-			title: String(row.title ?? ''),
-			posterPath: str(row, 'posterPath', 'poster_path'),
-			overview: str(row, 'overview'),
-			genre: str(row, 'genre'),
-			year: str(row, 'year'),
-			createdAt: row.createdAt ?? row.created_at,
-			watchedAt: row.watchedAt ?? row.watched_at ?? null,
-			rating: (row.rating ?? null) as string | null
+			id: num(row, 'id') ?? Number(row.id ?? 0),
+			userId: str(row, 'userId', 'user_id') ?? String(row.userId ?? row.user_id ?? ''),
+			title: str(row, 'title') ?? String(row.title ?? ''),
+			posterPath: str(row, 'posterPath', 'poster_path') ?? null,
+			overview: str(row, 'overview') ?? null,
+			genre: str(row, 'genre') ?? null,
+			year: str(row, 'year') ?? null,
+			createdAt: date(row, 'createdAt', 'created_at') ?? (row.createdAt ?? row.created_at as Date) ?? new Date(),
+			watchedAt: date(row, 'watchedAt', 'watched_at') ?? null,
+			rating: str(row, 'rating') ?? (row.rating as string | null) ?? null
 		}));
 
 		return { watchlist: watchlistData };
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
-		if (msg.includes('watched_at') || msg.includes('rating') || msg.includes('poster_path') || msg.includes('column')) {
+		const lower = msg.toLowerCase();
+		if (lower.includes('column') || lower.includes('poster_path') || lower.includes('watched_at') || lower.includes('rating') || lower.includes('schema') || lower.includes('relation') || lower.includes('does not exist')) {
 			throw new Error(
-				'Database schema is out of date. Run: pnpm db:migrate (or pnpm db:push) to add missing columns (e.g. poster_path, watched_at, rating).'
+				'Database schema is out of date or missing. Run: pnpm db:migrate (or pnpm db:push) and ensure DATABASE_URL in .env is correct.'
+			);
+		}
+		if (lower.includes('connection') || lower.includes('econnrefused') || lower.includes('timeout') || lower.includes('database')) {
+			throw new Error(
+				'Cannot connect to the database. Check DATABASE_URL in .env and that the database is running.'
 			);
 		}
 		throw err;
@@ -93,7 +120,6 @@ export const actions: Actions = {
 					message: 'Database schema out of date. Run: pnpm db:migrate'
 				});
 			}
-			// TMDB or network error – return 422 so client gets message, not error page
 			return fail(422, {
 				message: 'Could not add movie. Check the title or try again later.'
 			});
