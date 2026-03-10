@@ -3,6 +3,19 @@ import { db } from '$lib/server/db';
 import { watchlist } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
+const EMPTY_STATS = {
+	moviesWatched: 0,
+	inWatchlist: 0,
+	watchedThisMonth: 0,
+	watchedThisYear: 0,
+	averageRating: null as number | null,
+	totalRuntimeMinutes: 0,
+	totalRuntimeFormatted: null as string | null,
+	pacePerMonth: null as string | null,
+	criticStyle: null as string | null,
+	moodPhase: null as string | null
+};
+
 export const load: LayoutServerLoad = async (event) => {
 	const user = event.locals.user ?? null;
 	if (!user) {
@@ -122,20 +135,6 @@ export const load: LayoutServerLoad = async (event) => {
 		};
 	} catch {
 		// On error (e.g. DB unavailable), still show stats section with zeros so it's visible
-		return {
-			user,
-			watchlistStats: {
-				moviesWatched: 0,
-				inWatchlist: 0,
-				watchedThisMonth: 0,
-				watchedThisYear: 0,
-				averageRating: null,
-				totalRuntimeMinutes: 0,
-				totalRuntimeFormatted: null,
-				pacePerMonth: null,
-				criticStyle: null,
-				moodPhase: null
-			}
-		};
+		return { user, watchlistStats: EMPTY_STATS };
 	}
 };

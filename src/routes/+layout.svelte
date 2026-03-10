@@ -355,6 +355,23 @@ import Plus from '$lib/components/icons/Plus.svelte';
 </div>
 
 <style>
+	/* ==========================================================================
+	   LAYOUT STYLES — Index
+	   1. Global reset & base (html, body)
+	   2. CSS custom properties (theme)
+	   3. App shell & desktop layout
+	   4. Auth loading overlay (Kinoline screen)
+	   5. VHS overlay (grain)
+	   6. Header (brand, logo, tagline)
+	   7. Add movie CTA & overlay
+	   8. User menu (avatar, dropdown, login link)
+	   9. Login (sign-in) modal
+	   10. Main & global typography / form defaults
+	   ========================================================================== */
+
+	/* --------------------------------------------------------------------------
+	   1. Global reset & base
+	   -------------------------------------------------------------------------- */
 	:global(*) {
 		box-sizing: border-box;
 	}
@@ -366,62 +383,114 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		color: var(--text);
 		background: var(--bg);
 		-webkit-font-smoothing: antialiased;
+		color-scheme: dark;
 	}
 
+	:global(body) {
+		margin: 0;
+		min-height: 100vh;
+	}
+
+	/* --------------------------------------------------------------------------
+	   2. CSS custom properties — Color palette
+	   --------------------------------------------------------------------------
+	   Base .............. Page and default text
+	   Surfaces .......... Cards, inputs, panels
+	   Text .............. Primary, muted, links
+	   Borders ........... Dividers, input borders
+	   Buttons & links .... CTAs, focus
+	   Feedback .......... Error, success (watched badge)
+	   Modals ............. Overlays and dialogs (alias where same as base)
+	   Overlays ........... Backdrops, hovers, VHS screen
+	   Special ............ Neon (logo), rating star, filter badge
+	   -------------------------------------------------------------------------- */
 	:global(html) {
-		color-scheme: dark;
-		/* Default: dark theme (no blue) */
+		/* Base */
 		--bg: #0c0c0f;
 		--text: #e8e8f0;
 		--text-muted: #9090a0;
-		--border: #252538;
+		--white: #fff;
+
+		/* Surfaces */
+		--card-bg: #12121a;
 		--input-bg: #12121a;
 		--input-border: #2a2a3a;
-		--card-bg: #12121a;
-		/* Main CTA: soft elevated gray, dark text – readable, not white */
+		--input-border-hover: #2e2e3a;
+		--border: #252538;
+		--poster-bg: #1a1a22;
+
+		/* Text (aliases for clarity) */
+		--card-accent: var(--text);
+		--card-accent-muted: var(--text-muted);
+		--poster-text: var(--text-muted);
+
+		/* Buttons & links */
+		--link: #a8a8c0;
 		--btn-primary-bg: #a0a0b0;
 		--btn-primary-hover: #b0b0c0;
 		--btn-primary-text: #0f0f14;
 		--btn-primary-focus: #0f0f14;
-		--link: #a8a8c0;
 		--focus-ring: rgba(200, 200, 210, 0.35);
+
+		/* Feedback */
 		--error: #f87171;
 		--watched-badge-bg: #0d2e0d;
 		--watched-badge-text: #6ee76e;
 		--watched-badge-border: #1a4d1a;
-		--poster-bg: #1a1a22;
-		--poster-text: #9090a0;
-		--card-accent: #e8e8f0;
-		--card-accent-muted: #9090a0;
+
+		/* Modals (surfaces + aliases) */
+		--modal-bg: var(--card-bg);
+		--modal-border: var(--border);
+		--modal-backdrop: rgba(8, 8, 12, 0.85);
+		--modal-text: var(--text);
+		--modal-text-muted: var(--text-muted);
+		--modal-input-bg: #16161d;
+		--modal-input-border: #252530;
+		--modal-focus-border: #5a5a6a;
+		--modal-focus-ring: rgba(90, 90, 106, 0.25);
+		--modal-error: var(--error);
+
+		/* Float menu / dropdowns */
 		--float-menu-bg: rgba(18, 18, 24, 0.92);
 		--float-menu-border: rgba(255, 255, 255, 0.08);
 		--float-menu-input-bg: rgba(255, 255, 255, 0.06);
 		--float-menu-input-border: rgba(255, 255, 255, 0.12);
 		--float-menu-btn-bg: #3a3a4a;
 		--float-menu-btn-border: #4a4a5a;
-		--float-menu-btn-text: #fff;
+		--float-menu-btn-text: var(--white);
 		--float-menu-btn-hover: #4a4a5a;
-		--float-menu-text: #e8e8f0;
+		--float-menu-text: var(--text);
 		--float-menu-muted: rgba(232, 232, 240, 0.5);
-		--float-menu-error: #f87171;
+		--float-menu-error: var(--error);
+
+		/* Overlays & one-off surfaces */
+		--vhs-screen-blue: rgba(0, 0, 204, 0.78);
+		--overlay-mask: rgba(0, 0, 0, 0.78);
+		--backdrop-dark: rgba(0, 0, 0, 0.35);
+		--surface-hover: rgba(255, 255, 255, 0.08);
+		--surface-hover-strong: rgba(255, 255, 255, 0.1);
+		--surface-overlay-light: rgba(255, 255, 255, 0.06);
+		--surface-selected: rgba(255, 255, 255, 0.15);
 		--vhs-blue: #3a3a4a;
+
+		/* Special */
 		--neon-blue: #5c7cff;
-		/* Shared modal/overlay palette (dark mode) */
-		--modal-bg: #12121a;
-		--modal-border: #252538;
-		--modal-backdrop: rgba(8, 8, 12, 0.85);
-		--modal-text: #e8e8f0;
-		--modal-text-muted: #9090a0;
-		--modal-input-bg: #16161d;
-		--modal-input-border: #252530;
-		--modal-focus-border: #5a5a6a;
-		--modal-focus-ring: rgba(90, 90, 106, 0.25);
-		--modal-error: #f87171;
+		--rating-star: #eab308;
+		--badge-bg: rgba(0, 0, 0, 0.32);
+		--badge-text: rgba(255, 255, 255, 0.95);
+		--badge-border: rgba(255, 255, 255, 0.1);
 	}
 
-	:global(body) {
-		margin: 0;
+	/* --------------------------------------------------------------------------
+	   3. App shell & desktop layout
+	   -------------------------------------------------------------------------- */
+	.app {
+		width: 100%;
 		min-height: 100vh;
+		--page-padding-x: 1.5rem;
+		padding: 0 1.5rem 2rem;
+		box-sizing: border-box;
+		position: relative;
 	}
 
 	/* Desktop: no vertical scroll, content fits viewport */
@@ -447,21 +516,14 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		}
 	}
 
-	.app {
-		width: 100%;
-		min-height: 100vh;
-		--page-padding-x: 1.5rem;
-		padding: 0 1.5rem 2rem;
-		box-sizing: border-box;
-		position: relative;
-	}
-
-	/* Auth loading overlay – same blue VHS style as "Watched" transition */
+	/* --------------------------------------------------------------------------
+	   4. Auth loading overlay (Kinoline screen after sign in/up)
+	   -------------------------------------------------------------------------- */
 	.auth-loading-screen {
 		position: fixed;
 		inset: 0;
 		z-index: 10002;
-		background: rgba(0, 0, 204, 0.78);
+		background: var(--vhs-screen-blue);
 		backdrop-filter: blur(2px);
 		-webkit-backdrop-filter: blur(2px);
 		animation: auth-loading-in 0.55s ease-out;
@@ -509,7 +571,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	.auth-loading-title {
 		font-size: clamp(1.75rem, 5vw, 3rem);
 		font-weight: 600;
-		color: rgba(255, 255, 255, 0.95);
+		color: var(--white);
 		letter-spacing: 0.1em;
 		text-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
 	}
@@ -523,7 +585,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		width: 0.4em;
 		height: 0.4em;
 		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.9);
+		background: var(--badge-text);
 		animation: auth-loading-bullet 1.2s ease-in-out infinite both;
 	}
 	.auth-loading-dots span:nth-child(1) { animation-delay: 0s; }
@@ -534,7 +596,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		40% { opacity: 1; transform: scale(1); }
 	}
 
-	/* VHS/CRT overlay: grain + neutral dark tint (scanlines are on movie posters in page) */
+	/* --------------------------------------------------------------------------
+	   5. VHS overlay (grain; scanlines live on posters in +page)
+	   -------------------------------------------------------------------------- */
 	.vhs-overlay {
 		position: fixed;
 		inset: 0;
@@ -555,6 +619,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		mix-blend-mode: overlay;
 	}
 
+	/* --------------------------------------------------------------------------
+	   6. Header (brand, logo, tagline)
+	   -------------------------------------------------------------------------- */
 	.header {
 		display: flex;
 		align-items: center;
@@ -576,7 +643,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		gap: 16px;
 	}
 
-	/* Add movie: text button (matches Filters / Back to watchlist hover style) */
+	/* --------------------------------------------------------------------------
+	   7. Add movie CTA & overlay
+	   -------------------------------------------------------------------------- */
 	.add-movie-cta {
 		display: inline-flex;
 		align-items: center;
@@ -597,7 +666,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		transition: background-color 0.2s ease, color 0.2s ease;
 	}
 	.add-movie-cta:hover {
-		background-color: var(--card-bg, rgba(255, 255, 255, 0.06));
+		background-color: var(--surface-overlay-light);
 		color: var(--link);
 	}
 	.add-movie-cta:focus-visible {
@@ -664,7 +733,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	}
 
 	.add-overlay-input:hover {
-		border-color: #2e2e3a;
+		border-color: var(--input-border-hover);
 	}
 
 	.add-overlay-input:focus {
@@ -698,6 +767,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		border: 0;
 	}
 
+	/* --------------------------------------------------------------------------
+	   8. User menu (avatar, dropdown, items, login link)
+	   -------------------------------------------------------------------------- */
 	.brand {
 		display: flex;
 		flex-direction: column;
@@ -707,12 +779,12 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	.logo {
 		font-size: 1.375rem;
 		font-weight: 600;
-		color: #fff;
+		color: var(--white);
 		text-decoration: none;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		text-shadow:
-			0 0 4px #fff,
+			0 0 4px var(--white),
 			0 0 8px var(--neon-blue),
 			0 0 12px var(--neon-blue),
 			0 0 24px var(--neon-blue),
@@ -724,7 +796,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	.logo:hover {
 		text-decoration: none;
 		text-shadow:
-			0 0 6px #fff,
+			0 0 6px var(--white),
 			0 0 12px var(--neon-blue),
 			0 0 18px var(--neon-blue),
 			0 0 32px var(--neon-blue),
@@ -776,7 +848,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	}
 
 	.user-menu-trigger:hover {
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--surface-hover);
 	}
 
 	.user-menu-trigger:hover .user-avatar,
@@ -792,7 +864,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	}
 
 	.user-menu-trigger[aria-expanded='true'] {
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--surface-hover);
 	}
 
 	/* Avatar: sticker-style (dark mode) – inner outline + shadow */
@@ -839,7 +911,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		position: fixed;
 		inset: 0;
 		z-index: 100;
-		background: rgba(0, 0, 0, 0.35);
+		background: var(--backdrop-dark);
 		animation: user-menu-backdrop-in 0.2s ease-out;
 	}
 
@@ -951,7 +1023,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		outline-offset: 2px;
 	}
 
-	/* Sign in modal (header Sign in button) */
+	/* --------------------------------------------------------------------------
+	   9. Login (sign-in) modal
+	   -------------------------------------------------------------------------- */
 	.login-modal-backdrop {
 		position: fixed;
 		inset: 0;
@@ -1065,6 +1139,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		to { opacity: 1; }
 	}
 
+	/* --------------------------------------------------------------------------
+	   10. Main & global typography / form defaults
+	   -------------------------------------------------------------------------- */
 	.main {
 		padding-top: 0;
 	}

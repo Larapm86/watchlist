@@ -41,6 +41,7 @@
 <div class="poster-grid-overlay" aria-hidden="true"></div>
 
 <style>
+	/* PosterGrid: background grid + overlay gradient */
 	.poster-grid {
 		position: fixed;
 		inset: 0;
@@ -54,7 +55,7 @@
 	.poster-cell {
 		position: relative;
 		overflow: hidden;
-		background: var(--poster-bg, #1a1a22);
+		background: var(--poster-bg);
 	}
 	.poster-cell img {
 		width: 100%;
@@ -62,20 +63,22 @@
 		object-fit: cover;
 		opacity: 0.85;
 	}
+
 	.poster-grid-overlay {
 		position: fixed;
 		inset: 0;
 		z-index: 1;
 		background: linear-gradient(
 			180deg,
-			var(--bg, #0c0c0f) 0%,
+			var(--bg) 0%,
 			rgba(12, 12, 15, 0.92) 25%,
 			rgba(12, 12, 15, 0.88) 50%,
 			rgba(12, 12, 15, 0.92) 75%,
-			var(--bg, #0c0c0f) 100%
+			var(--bg) 100%
 		);
 		pointer-events: none;
 	}
+
 	@media (max-width: 768px) {
 		.poster-grid {
 			grid-template-columns: repeat(4, 1fr);

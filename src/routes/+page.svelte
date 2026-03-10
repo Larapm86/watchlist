@@ -653,6 +653,20 @@
 {/if}
 
 <style>
+	/* Watchlist page — Index
+	   1. Page layout
+	   2. Drop VHS full-screen transition ("Watched")
+	   3. Rating modal
+	   4. Filters (bar, dropdowns, trigger)
+	   5. Desktop layout (fill main)
+	   6. Poster strip (hero cards, empty state)
+	   7. VHS drop zone & player (slot text, toast)
+	   8. Poster grid (horizontal strip)
+	   9. Poster cards (scanlines, sticker, etc.)
+	   10. Typography / misc
+	*/
+
+	/* 1. Page layout */
 	.page {
 		display: flex;
 		flex-direction: column;
@@ -661,12 +675,12 @@
 		min-height: 100vh;
 	}
 
-	/* Full-screen VHS transition when dropping a movie – subtle, smooth, integrated */
+	/* 2. Drop VHS full-screen transition ("Watched") */
 	.drop-vhs-screen {
 		position: fixed;
 		inset: 0;
 		z-index: 10000;
-		background: rgba(0, 0, 204, 0.78);
+		background: var(--vhs-screen-blue);
 		backdrop-filter: blur(2px);
 		-webkit-backdrop-filter: blur(2px);
 		animation: drop-vhs-soft-in 0.55s ease-out;
@@ -701,7 +715,7 @@
 	.drop-vhs-play {
 		font-size: clamp(1.5rem, 4vw, 2.5rem);
 		font-weight: 600;
-		color: rgba(255, 255, 255, 0.9);
+		color: var(--white);
 		letter-spacing: 0.1em;
 		text-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
 	}
@@ -709,7 +723,7 @@
 	.drop-vhs-time {
 		font-size: clamp(1rem, 2.8vw, 1.5rem);
 		font-weight: 600;
-		color: rgba(255, 255, 255, 0.8);
+		color: var(--badge-text);
 		letter-spacing: 0.08em;
 		text-shadow: 0 0 1px rgba(0, 0, 0, 0.35);
 	}
@@ -736,7 +750,7 @@
 		pointer-events: none;
 	}
 
-	/* Rating modal – uses shared --modal-* palette (same as add-movie overlay) */
+	/* 3. Rating modal */
 	.rating-modal-backdrop {
 		position: fixed;
 		inset: 0;
@@ -801,10 +815,10 @@
 	}
 	.rating-star-btn:hover {
 		transform: scale(1.15);
-		color: #eab308;
+		color: var(--rating-star);
 	}
 	.rating-star-btn.star-hovered {
-		color: #eab308;
+		color: var(--rating-star);
 	}
 	.rating-star-btn:focus-visible {
 		outline: 2px solid var(--modal-focus-border);
@@ -844,7 +858,7 @@
 		border: 0;
 	}
 
-	/* Filters: count left, bordered button right (icon + text + chevron) */
+	/* 4. Filters (bar, dropdowns, trigger) */
 	.filters-wrap {
 		position: relative;
 		display: flex;
@@ -881,7 +895,7 @@
 		opacity: 0.95;
 	}
 	.filters-trigger:focus-visible {
-		outline: 3px solid var(--btn-primary-focus, #0f0f14);
+		outline: 3px solid var(--btn-primary-focus);
 		outline-offset: 2px;
 	}
 	.filters-trigger-text {
@@ -917,11 +931,11 @@
 		transition: background-color 0.2s ease, color 0.2s ease;
 	}
 	.filters-clear-btn:hover {
-		background-color: var(--card-bg, rgba(255, 255, 255, 0.06));
+		background-color: var(--surface-overlay-light);
 		color: var(--text);
 	}
 	.filters-clear-btn:focus-visible {
-		outline: 3px solid var(--btn-primary-focus, #0f0f14);
+		outline: 3px solid var(--btn-primary-focus);
 		outline-offset: 2px;
 	}
 	.filters-trigger-badge {
@@ -935,9 +949,9 @@
 		font-weight: 600;
 		line-height: 1;
 		border-radius: 999px;
-		background: rgba(0, 0, 0, 0.32);
-		color: rgba(255, 255, 255, 0.95);
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: var(--badge-bg);
+		color: var(--badge-text);
+		border: 1px solid var(--badge-border);
 	}
 	.filters-backdrop {
 		position: fixed;
@@ -988,17 +1002,17 @@
 		line-height: 1;
 		border: 1px solid var(--border);
 		border-radius: 8px;
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--surface-overlay-light);
 		color: var(--text);
 		cursor: pointer;
 		transition: background 0.2s ease, border-color 0.2s ease;
 	}
 	.filter-dropdown-trigger:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--surface-hover-strong);
 		border-color: var(--input-border);
 	}
 	.filter-dropdown-trigger:focus-visible {
-		outline: 3px solid var(--btn-primary-focus, #0f0f14);
+		outline: 3px solid var(--btn-primary-focus);
 		outline-offset: 2px;
 	}
 	.filter-dropdown-menu {
@@ -1033,18 +1047,18 @@
 		transition: background 0.2s ease;
 	}
 	.filter-dropdown-option:hover {
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--surface-hover-strong);
 	}
 	.filter-dropdown-option.selected {
-		background: rgba(255, 255, 255, 0.15);
+		background: var(--surface-selected);
 		color: var(--link);
 	}
 	.filter-dropdown-option:focus-visible {
 		outline: none;
-		background: rgba(255, 255, 255, 0.1);
+		background: var(--surface-hover-strong);
 	}
 
-	/* Desktop: fill main without causing vertical scroll */
+	/* 5. Desktop layout (fill main) */
 	@media (min-height: 700px) {
 		.page {
 			height: 100%;
@@ -1057,7 +1071,7 @@
 		}
 	}
 
-	/* Poster strip: each poster = same hero shape + behavior */
+	/* 6. Poster strip (hero cards, empty state) */
 	.poster-strip-wrap {
 		position: relative;
 		margin-left: calc(-1 * var(--page-padding-x));
@@ -1110,7 +1124,7 @@
 		}
 	}
 
-	/* VHS player drop zone: floating bottom right */
+	/* 7. VHS drop zone & player (slot text, toast) */
 	.vhs-drop-wrap {
 		position: fixed;
 		bottom: 1.25rem;
@@ -1181,7 +1195,7 @@
 		text-align: center;
 		font-family: VT323, monospace;
 		font-size: 16px;
-		color: #e8e8e8;
+		color: var(--text);
 		line-height: 1;
 		text-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
 	}
@@ -1235,7 +1249,7 @@
 		}
 	}
 
-	/* Horizontal scrolling strip: big posters (each = hero shape), no scrollbar */
+	/* 8. Poster grid (horizontal strip) */
 	.poster-grid {
 		display: flex;
 		gap: 1.5rem;
@@ -1264,6 +1278,7 @@
 		scroll-snap-align: start;
 	}
 
+	/* 9. Poster cards (VHS case, scanlines, sticker) */
 	.poster-card {
 		display: flex;
 		flex-direction: column;
@@ -1365,7 +1380,7 @@
 		min-height: 0;
 		flex-shrink: 0;
 		/* Inner frame like VHS sleeve window */
-		border: 2px solid #1a1a1a;
+		border: 2px solid var(--poster-bg);
 		margin: 4px;
 		box-sizing: border-box;
 	}
@@ -1460,7 +1475,7 @@
 		justify-content: center;
 		gap: 0.75rem;
 		padding: 0.75rem;
-		background: rgba(0, 0, 0, 0.78);
+		background: var(--overlay-mask);
 		opacity: 0;
 		transition: opacity 0.25s ease;
 		pointer-events: none;
@@ -1486,7 +1501,7 @@
 		margin: 0;
 		font-size: 0.8125rem;
 		line-height: 1.4;
-		color: #fff;
+		color: var(--white);
 		text-align: center;
 		display: -webkit-box;
 		-webkit-line-clamp: 5;

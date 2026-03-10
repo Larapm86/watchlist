@@ -95,6 +95,14 @@
 </div>
 
 <style>
+	/* Landing page
+	   1. Layout (container, content)
+	   2. Typography (claim, tagline, CTA text)
+	   3. Form (layout, labels, inputs)
+	   4. Buttons
+	*/
+
+	/* 1. Layout */
 	.landing {
 		position: relative;
 		min-height: 100vh;
@@ -113,6 +121,7 @@
 		text-align: center;
 	}
 
+	/* 2. Typography */
 	.landing-claim {
 		font-size: clamp(2.25rem, 6vw, 3.5rem);
 		font-weight: 600;
@@ -137,6 +146,7 @@
 		opacity: 0.95;
 	}
 
+	/* 3. Form */
 	.landing-form {
 		display: flex;
 		flex-direction: column;
@@ -192,6 +202,7 @@
 		box-shadow: 0 0 0 2px var(--focus-ring);
 	}
 
+	/* 4. Buttons */
 	.landing-btn {
 		width: 100%;
 		height: 44px;
@@ -214,13 +225,13 @@
 	}
 
 	.landing-btn-continue:hover {
-		background: var(--float-menu-input-bg, rgba(255, 255, 255, 0.06));
+		background: var(--surface-overlay-light);
 		border-color: var(--input-border);
 	}
 
 	.landing-btn-primary {
 		background: var(--btn-primary-bg);
-		color: var(--btn-primary-text, var(--text));
+		color: var(--btn-primary-text);
 		border-color: var(--border);
 	}
 
@@ -234,7 +245,7 @@
 	}
 
 	.landing-btn:focus-visible {
-		outline: 3px solid var(--btn-primary-focus, #0c0c0f);
+		outline: 3px solid var(--btn-primary-focus);
 		outline-offset: 2px;
 	}
 </style>

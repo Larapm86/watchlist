@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { LayoutData } from '../$types';
+	import type { PageData } from './$types';
 
-	let { data }: { data: LayoutData } = $props();
+	let { data }: { data: PageData } = $props();
 
 	const stats = $derived(data?.watchlistStats);
 </script>
@@ -83,6 +83,18 @@
 </div>
 
 <style>
+	/* Stats page
+	   -------------
+	   1. Page layout
+	   2. Two-column layout (responsive)
+	   3. Back link
+	   4. Section titles
+	   5. Overview grid & cards
+	   6. Critic's Lens / Lately block
+	   7. Empty state
+	*/
+
+	/* 1. Page layout */
 	.stats-page {
 		width: 100%;
 		max-width: none;
@@ -95,10 +107,11 @@
 		margin-bottom: 2rem;
 	}
 
+	/* 2. Two-column layout (responsive) */
 	.stats-columns {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 5rem;
+		gap: 2.5rem;
 		align-items: start;
 	}
 
@@ -112,6 +125,7 @@
 		min-width: 0;
 	}
 
+	/* 3. Back link */
 	.stats-back {
 		display: inline-block;
 		font-size: 0.9375rem;
@@ -124,10 +138,11 @@
 	}
 
 	.stats-back:hover {
-		background-color: var(--card-bg, rgba(255, 255, 255, 0.06));
+		background-color: var(--surface-overlay-light);
 		color: var(--text);
 	}
 
+	/* 4. Section titles */
 	.stats-section {
 		margin-bottom: 2rem;
 	}
@@ -141,6 +156,7 @@
 		margin: 0 0 0.75rem;
 	}
 
+	/* 5. Overview grid & cards */
 	.stats-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -153,7 +169,7 @@
 		flex-direction: column;
 		gap: 0.25rem;
 		padding: 1rem;
-		background: var(--card-bg, rgba(255, 255, 255, 0.06));
+		background: var(--card-bg);
 		border: 1px solid var(--border);
 		border-radius: 12px;
 	}
@@ -177,6 +193,7 @@
 		line-height: 1.5;
 	}
 
+	/* 6. Critic's Lens / Lately block */
 	.stats-fun-list {
 		display: flex;
 		flex-direction: column;
@@ -199,10 +216,7 @@
 		margin-bottom: 0.2rem;
 	}
 
-	.stats-section-fun .stats-section-title {
-		margin-bottom: 0.35rem;
-	}
-
+	/* 7. Empty state */
 	.stats-empty {
 		margin: 0;
 		font-size: 1rem;

@@ -70,6 +70,14 @@
 </div>
 
 <style>
+	/* Auth (demo login) page
+	   1. Page & card layout
+	   2. Title & tagline
+	   3. Form (labels, inputs, error)
+	   4. Actions & buttons
+	*/
+
+	/* 1. Page & card layout */
 	.auth-page {
 		display: flex;
 		align-items: center;
@@ -88,6 +96,7 @@
 		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 	}
 
+	/* 2. Title & tagline */
 	.auth-title {
 		font-size: 1.5rem;
 		font-weight: 600;
@@ -95,9 +104,9 @@
 		text-transform: uppercase;
 		text-align: center;
 		margin: 0 0 0.25rem;
-		color: #fff;
+		color: var(--white);
 		text-shadow:
-			0 0 4px #fff,
+			0 0 4px var(--white),
 			0 0 8px var(--neon-blue),
 			0 0 12px var(--neon-blue),
 			0 0 24px var(--neon-blue);
@@ -111,6 +120,7 @@
 		line-height: 1.4;
 	}
 
+	/* 3. Form */
 	.auth-form {
 		display: flex;
 		flex-direction: column;
@@ -165,6 +175,7 @@
 		padding: 0.5rem 0;
 	}
 
+	/* 4. Actions & buttons */
 	.auth-actions {
 		display: flex;
 		flex-direction: column;
@@ -190,7 +201,7 @@
 
 	.auth-btn-primary {
 		background: var(--btn-primary-bg);
-		color: var(--card-bg);
+		color: var(--btn-primary-text);
 	}
 
 	.auth-btn-primary:hover {
