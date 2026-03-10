@@ -29,6 +29,31 @@ npm run dev
 npm run dev -- --open
 ```
 
+## Database
+
+The app uses PostgreSQL (e.g. [Neon](https://neon.tech)) and Drizzle. If the database is not working:
+
+1. **Create `.env`** from the example:
+   ```sh
+   cp .env.example .env
+   ```
+
+2. **Set `DATABASE_URL`** in `.env` to a real Postgres connection string:
+   - **Neon (free tier):** create a project at [neon.tech](https://neon.tech), copy the connection string, and use `postgres://...` (not `postgresql://`) with `?sslmode=require` only if needed.
+   - **Local Postgres:** e.g. `postgres://user:password@localhost:5432/watchlist`
+
+   If you leave the placeholder `user:password@host:port`, the app will refuse to start and tell you to update it.
+
+3. **Apply the schema** so tables exist:
+   ```sh
+   pnpm db:push
+   ```
+   Or run migrations: `pnpm db:migrate`
+
+4. **Auth (optional):** For sign-in/sign-up, set `BETTER_AUTH_SECRET` (e.g. a long random string) and `ORIGIN` (your app URL, e.g. `http://localhost:5173`) in `.env`.
+
+If you see "Database schema is out of date" or "Cannot connect to the database", follow the steps above and ensure the database is running and reachable.
+
 ## Building
 
 To create a production version of your app:
