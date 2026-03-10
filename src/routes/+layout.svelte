@@ -17,6 +17,9 @@
 	let addMovieCtaRef: HTMLButtonElement;
 	let addOverlayPreviousFocus: HTMLElement | null = null;
 	let addFormSubmitting = $state(false);
+	let loginModalOpen = $state(false);
+	let loginModalSubmitting = $state(false);
+	let loginModalError = $state<string | null>(null);
 
 	function getAddOverlayFocusables(): HTMLElement[] {
 		if (!addOverlayPanel) return [];
@@ -94,7 +97,15 @@
 	}
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window
+	onclick={handleClickOutside}
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && loginModalOpen) {
+			loginModalOpen = false;
+			loginModalError = null;
+		}
+	}}
+/>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
@@ -114,9 +125,11 @@
 	<header class="header" class:menu-open={userMenuOpen}>
 		<div class="brand">
 			<a href="/" class="logo">Kinoline</a>
-			<span class="tagline">Curate. Queue. Watch.</span>
+			{#if data?.user}
+				<span class="tagline">Curate. Queue. Watch.</span>
+			{/if}
 		</div>
-		{#if data.user}
+		{#if data?.user}
 			<div class="header-actions">
 				<button
 					type="button"
@@ -127,7 +140,7 @@
 					onclick={() => (addOverlayOpen = true)}
 				>
 					<span class="add-movie-cta-icon" aria-hidden="true">
-						<Plus size={18} />
+						<Plus size={14} />
 					</span>
 					<span class="add-movie-cta-text">Add a movie</span>
 				</button>
@@ -166,7 +179,7 @@
 				</div>
 			</div>
 		{:else}
-			<a href="/demo/better-auth/login" class="login-link">Log in</a>
+			<button type="button" class="login-link" onclick={() => { loginModalOpen = true; loginModalError = null; }}>Log in</button>
 		{/if}
 	</header>
 
@@ -176,6 +189,72 @@
 			onclick={() => (userMenuOpen = false)}
 			aria-hidden="true"
 		></div>
+	{/if}
+
+	{#if loginModalOpen}
+		<div
+			class="login-modal-backdrop"
+			aria-hidden="true"
+			onclick={() => { loginModalOpen = false; loginModalError = null; }}
+		></div>
+		<div
+			class="login-modal-panel"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="login-modal-title"
+			aria-label="Log in"
+			onclick={(e) => e.stopPropagation()}
+		>
+			<h2 id="login-modal-title" class="login-modal-title">Welcome back</h2>
+			<form
+				method="post"
+				action="/demo/better-auth/login?/signInEmail"
+				use:enhance={() => {
+					loginModalSubmitting = true;
+					loginModalError = null;
+					return async ({ result, update }) => {
+						await update();
+						if (result.type === 'failure' && result.data?.message) {
+							loginModalError = result.data.message as string;
+						} else {
+							loginModalOpen = false;
+							await invalidateAll();
+						}
+						loginModalSubmitting = false;
+					};
+				}}
+				class="login-modal-form"
+			>
+				<label class="login-modal-label">
+					<span class="login-modal-label-text">Email</span>
+					<input
+						type="email"
+						name="email"
+						autocomplete="email"
+						required
+						class="login-modal-input"
+						placeholder="you@example.com"
+					/>
+				</label>
+				<label class="login-modal-label">
+					<span class="login-modal-label-text">Password</span>
+					<input
+						type="password"
+						name="password"
+						autocomplete="current-password"
+						required
+						class="login-modal-input"
+						placeholder="••••••••"
+					/>
+				</label>
+				{#if loginModalError}
+					<p class="login-modal-error" role="alert">{loginModalError}</p>
+				{/if}
+				<button type="submit" class="login-modal-btn" disabled={loginModalSubmitting}>
+					{loginModalSubmitting ? 'Signing in…' : 'Log in'}
+				</button>
+			</form>
+		</div>
 	{/if}
 
 	{#if addOverlayOpen}
@@ -269,8 +348,11 @@
 		--input-bg: #12121a;
 		--input-border: #2a2a3a;
 		--card-bg: #12121a;
-		--btn-primary-bg: #e8e8f0;
-		--btn-primary-hover: #d0d0dc;
+		/* Main CTA: soft elevated gray, dark text – readable, not white */
+		--btn-primary-bg: #a0a0b0;
+		--btn-primary-hover: #b0b0c0;
+		--btn-primary-text: #0f0f14;
+		--btn-primary-focus: #0f0f14;
 		--link: #a8a8c0;
 		--focus-ring: rgba(200, 200, 210, 0.35);
 		--error: #f87171;
@@ -373,6 +455,7 @@
 		gap: 1rem;
 		padding: 1.25rem 0 1.5rem;
 		position: relative;
+		z-index: 50;
 	}
 
 	.header.menu-open {
@@ -385,24 +468,24 @@
 		gap: 0.5rem;
 	}
 
-	/* Plus CTA: same size as avatar (32×32), square with rounded corners, grows right-to-left on hover */
+	/* Plus CTA: 33×33 square with rounded corners, grows right-to-left on hover */
 	.add-movie-cta {
 		display: inline-flex;
 		align-items: center;
 		justify-content: flex-end;
 		flex-direction: row-reverse;
 		gap: 0;
-		width: 32px;
-		height: 32px;
-		min-width: 32px;
+		width: 33px;
+		height: 33px;
+		min-width: 33px;
 		margin: 0;
-		padding: 0 8px;
+		padding: 0 7px;
 		font-size: 0.9375rem;
 		font-weight: 600;
 		line-height: 1;
 		background: var(--btn-primary-bg);
-		color: var(--card-bg);
-		border: 1px solid transparent;
+		color: var(--btn-primary-text);
+		border: 1px solid var(--border);
 		border-radius: 8px;
 		cursor: pointer;
 		transition: background 0.25s ease, color 0.25s ease, min-width 0.25s ease, padding 0.25s ease, border-radius 0.25s ease, width 0.25s ease, height 0.25s ease;
@@ -421,7 +504,7 @@
 	}
 
 	.add-movie-cta:focus-visible {
-		outline: 2px solid var(--link);
+		outline: 3px solid var(--btn-primary-focus);
 		outline-offset: 2px;
 	}
 
@@ -743,15 +826,17 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		height: 40px;
+		min-height: 44px;
 		padding: 0 1rem;
 		font-size: 0.9375rem;
 		font-weight: 600;
+		font-family: inherit;
 		color: var(--text);
 		text-decoration: none;
 		background: transparent;
 		border: 1px solid var(--border);
 		border-radius: 10px;
+		cursor: pointer;
 		transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 		box-sizing: border-box;
 	}
@@ -764,8 +849,122 @@
 	}
 
 	.login-link:focus-visible {
-		outline: 2px solid var(--link);
+		outline: 3px solid var(--btn-primary-focus);
 		outline-offset: 2px;
+	}
+
+	/* Login modal (top-right Log in button) */
+	.login-modal-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 200;
+		background: var(--modal-backdrop);
+		backdrop-filter: blur(6px);
+		animation: fade-in 0.2s ease-out;
+	}
+
+	.login-modal-panel {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: 90%;
+		max-width: 400px;
+		padding: 1.5rem 2rem;
+		background: var(--modal-bg);
+		border: 1px solid var(--modal-border);
+		border-radius: 16px;
+		box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+		z-index: 201;
+		animation: fade-in 0.25s ease-out;
+	}
+
+	.login-modal-title {
+		margin: 0 0 1.25rem;
+		font-size: 1.375rem;
+		font-weight: 600;
+		color: var(--modal-text);
+		text-align: center;
+	}
+
+	.login-modal-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+
+	.login-modal-label {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+
+	.login-modal-label-text {
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--text);
+	}
+
+	.login-modal-input {
+		width: 100%;
+		height: 44px;
+		padding: 0 0.75rem;
+		font-size: 0.9375rem;
+		font-family: inherit;
+		color: var(--text);
+		background: var(--modal-input-bg);
+		border: 1px solid var(--modal-input-border);
+		border-radius: 10px;
+		box-sizing: border-box;
+		transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.login-modal-input:focus {
+		outline: none;
+		border-color: var(--modal-focus-border);
+		box-shadow: 0 0 0 2px var(--modal-focus-ring);
+	}
+
+	.login-modal-btn {
+		width: 100%;
+		height: 44px;
+		margin-top: 0.25rem;
+		padding: 0 1rem;
+		font-size: 0.9375rem;
+		font-weight: 600;
+		font-family: inherit;
+		background: var(--btn-primary-bg);
+		color: var(--btn-primary-text);
+		border: 1px solid var(--modal-border);
+		border-radius: 10px;
+		cursor: pointer;
+		transition: background 0.2s ease, opacity 0.2s ease;
+		box-sizing: border-box;
+	}
+
+	.login-modal-btn:hover:not(:disabled) {
+		background: var(--btn-primary-hover);
+	}
+
+	.login-modal-btn:focus-visible {
+		outline: 3px solid var(--btn-primary-focus);
+		outline-offset: 2px;
+	}
+
+	.login-modal-btn:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.login-modal-error {
+		margin: 0;
+		font-size: 0.875rem;
+		color: var(--modal-error);
+	}
+
+	@keyframes fade-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
 	}
 
 	.main {
@@ -853,8 +1052,8 @@
 		padding: 0.5rem 1rem;
 		margin-top: 0.75rem;
 		background: var(--btn-primary-bg);
-		color: var(--card-bg);
-		border: none;
+		color: var(--btn-primary-text);
+		border: 1px solid var(--border);
 		border-radius: 6px;
 		cursor: pointer;
 		transition: background 0.2s ease, opacity 0.2s ease;
@@ -862,6 +1061,11 @@
 
 	:global(button:hover) {
 		background: var(--btn-primary-hover);
+	}
+
+	:global(button:focus-visible) {
+		outline: 3px solid var(--btn-primary-focus);
+		outline-offset: 2px;
 	}
 
 	:global(.form-error) {

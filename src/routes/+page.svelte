@@ -5,6 +5,7 @@
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import X from '$lib/components/icons/X.svelte';
+	import Landing from '$lib/components/landing/Landing.svelte';
 	import type { PageData, ActionData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -212,7 +213,8 @@
 	}
 </script>
 
-<div class="page">
+{#if data?.user}
+	<div class="page" transition:fade={{ duration: 320 }}>
 	{#if showDropTransition}
 		<div class="drop-vhs-screen" role="presentation" aria-hidden="true" transition:fade={{ duration: 500 }}>
 			<div class="drop-vhs-screen-inner">
@@ -225,7 +227,7 @@
 	{/if}
 
 	{#if showRatingModal && lastDroppedId}
-		{@const ratingMovie = data.watchlist.find((w) => w.id === lastDroppedId)}
+		{@const ratingMovie = (data.watchlist ?? []).find((w) => w.id === lastDroppedId)}
 		{@const starCopy = starHover <= 0 ? 'How was it? Tap a star to rate.' : starHover <= 2 ? 'Not for me — didn\'t love it.' : starHover === 3 ? 'It was okay — middle of the road.' : 'Loved it! — really enjoyed this one.'}
 		<div
 			class="rating-modal-backdrop"
@@ -456,6 +458,11 @@
 	</section>
 	</div>
 </div>
+{:else}
+	<div transition:fade={{ duration: 320 }}>
+		<Landing />
+	</div>
+{/if}
 
 <style>
 	.page {

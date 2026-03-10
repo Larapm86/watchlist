@@ -6,9 +6,9 @@ import { searchMovieDetails } from '$lib/server/tmdb';
 import { and, desc, eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
-	const user = event.locals.user;
+	const user = event.locals.user ?? null;
 	if (!user) {
-		redirect(302, '/demo/better-auth/login');
+		return { user: null, watchlist: [] };
 	}
 
 	try {
@@ -72,7 +72,7 @@ export const load: PageServerLoad = async (event) => {
 			rating: str(row, 'rating') ?? (row.rating as string | null) ?? null
 		}));
 
-		return { watchlist: watchlistData };
+		return { user, watchlist: watchlistData };
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
 		const lower = msg.toLowerCase();
