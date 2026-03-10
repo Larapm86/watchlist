@@ -333,7 +333,7 @@
 			<!-- Row 1: count + Filters button -->
 			<div class="filters-wrap">
 				<p class="filters-count">
-					{list.length} {list.length === 1 ? 'movie' : 'movies'}
+					{filteredWatchlist.length} {filteredWatchlist.length === 1 ? 'movie' : 'movies'}
 				</p>
 				<div class="filters-actions">
 					{#if hasActiveFilters}
@@ -905,19 +905,20 @@
 		display: inline-flex;
 	}
 	.filters-clear-btn {
-		padding: 0.35rem 0;
+		padding: 0.35em 0.6em;
 		font-size: 0.9rem;
 		font-weight: 500;
 		font-family: inherit;
 		color: var(--link);
 		background: none;
 		border: none;
+		border-radius: 6px;
 		cursor: pointer;
-		transition: opacity 0.2s ease;
+		transition: background-color 0.2s ease, color 0.2s ease;
 	}
 	.filters-clear-btn:hover {
-		opacity: 0.9;
-		text-decoration: underline;
+		background-color: var(--card-bg, rgba(255, 255, 255, 0.06));
+		color: var(--text);
 	}
 	.filters-clear-btn:focus-visible {
 		outline: 3px solid var(--btn-primary-focus, #0f0f14);

@@ -19,6 +19,7 @@ export interface TmdbMovieDetails {
 	overview: string | null;
 	genre: string | null;
 	year: string | null;
+	runtime: number | null; // minutes
 }
 
 /** TMDB movie genre ID to name (from https://api.themoviedb.org/3/genre/movie/list) */
@@ -60,11 +61,29 @@ function releaseDateToYear(releaseDate: string | null | undefined): string | nul
 	return null;
 }
 
+const TMDB_MOVIE_URL = 'https://api.themoviedb.org/3/movie';
+
+async function fetchMovieRuntime(
+	movieId: number,
+	key: string,
+	isReadAccessToken: boolean
+): Promise<number | null> {
+	const url = `${TMDB_MOVIE_URL}/${movieId}`;
+	const res = await fetch(
+		url + (isReadAccessToken ? '' : `?api_key=${key}`),
+		isReadAccessToken ? { headers: { Authorization: `Bearer ${key}` } } : undefined
+	);
+	if (!res.ok) return null;
+	const data = (await res.json()) as { runtime?: number };
+	const rt = data?.runtime;
+	return typeof rt === 'number' && rt > 0 ? rt : null;
+}
+
 /**
- * Search TMDB by movie title and return poster path, overview, genre and year of the first result.
+ * Search TMDB by movie title and return poster path, overview, genre, year and runtime of the first result.
  */
 export async function searchMovieDetails(title: string): Promise<TmdbMovieDetails> {
-	const empty = { posterPath: null, overview: null, genre: null, year: null };
+	const empty = { posterPath: null, overview: null, genre: null, year: null, runtime: null };
 	const key = (env.TMDB_API_KEY ?? process.env.TMDB_API_KEY)?.trim();
 	if (!key) return empty;
 
@@ -91,5 +110,7 @@ export async function searchMovieDetails(title: string): Promise<TmdbMovieDetail
 			: null;
 	const genre = genreIdsToNames(firstWithPoster.genre_ids);
 	const year = releaseDateToYear(firstWithPoster.release_date);
-	return { posterPath, overview, genre, year };
+	const movieId = typeof firstWithPoster.id === 'number' ? firstWithPoster.id : null;
+	const runtime = movieId != null ? await fetchMovieRuntime(movieId, key, isReadAccessToken) : null;
+	return { posterPath, overview, genre, year, runtime };
 }

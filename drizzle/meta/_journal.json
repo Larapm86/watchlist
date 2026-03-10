@@ -50,6 +50,13 @@
       "when": 1773092077703,
       "tag": "0006_steep_catseye",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1773152835370,
+      "tag": "0007_early_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }

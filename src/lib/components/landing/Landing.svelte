@@ -2,6 +2,7 @@
 	import { slide } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
+	import { showAuthLoadingScreen } from '$lib/stores/authLoading';
 	import PosterGrid from './PosterGrid.svelte';
 
 	let step = $state<'name' | 'full'>('name');
@@ -29,7 +30,12 @@
 				registerSubmitting = true;
 				return async ({ result, update }) => {
 					await update();
-					await invalidateAll();
+					if (result.type !== 'failure') {
+						showAuthLoadingScreen.set(true);
+						/* Layout loads data after overlay ends */
+					} else {
+						await invalidateAll();
+					}
 					registerSubmitting = false;
 				};
 			}}

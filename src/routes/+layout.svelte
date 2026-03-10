@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
-	import LogOut from '$lib/components/icons/LogOut.svelte';
-	import Plus from '$lib/components/icons/Plus.svelte';
+import Clapperboard from '$lib/components/icons/Clapperboard.svelte';
+import LogOut from '$lib/components/icons/LogOut.svelte';
+import Plus from '$lib/components/icons/Plus.svelte';
 	import { addFormMessage } from '$lib/stores/addForm';
+	import { showAuthLoadingScreen } from '$lib/stores/authLoading';
 	import type { LayoutData } from './$types';
 
 	let { data, children }: { data: LayoutData; children: any } = $props();
@@ -70,6 +73,15 @@
 		};
 	});
 
+	$effect(() => {
+		if (!$showAuthLoadingScreen) return;
+		const t = setTimeout(async () => {
+			await invalidateAll();
+			showAuthLoadingScreen.set(false);
+		}, 2500);
+		return () => clearTimeout(t);
+	});
+
 	onMount(() => {
 		document.documentElement.setAttribute('data-theme', 'dark');
 	});
@@ -122,6 +134,18 @@
 </svelte:head>
 
 <div class="app">
+	{#if $showAuthLoadingScreen}
+		<div class="auth-loading-screen" transition:fade={{ duration: 200 }}>
+			<div class="auth-loading-scanlines" aria-hidden="true"></div>
+			<div class="auth-loading-grain" aria-hidden="true"></div>
+			<div class="auth-loading-inner">
+				<span class="auth-loading-title">Kinoline</span>
+				<div class="auth-loading-dots" aria-hidden="true">
+					<span></span><span></span><span></span>
+				</div>
+			</div>
+		</div>
+	{/if}
 	<header class="header" class:menu-open={userMenuOpen}>
 		<div class="brand">
 			<a href="/" class="logo">Kinoline</a>
@@ -168,6 +192,11 @@
 							role="menu"
 							aria-labelledby="user-menu-trigger"
 						>
+							<a href="/stats" class="user-menu-item user-menu-link" role="menuitem">
+								<Clapperboard size={20} />
+								Stats
+							</a>
+							<div class="user-menu-sep" role="separator"></div>
 							<form method="post" action="/demo/better-auth?/signOut" class="user-menu-item-form" role="none">
 								<button type="submit" class="user-menu-item" role="menuitem" title="Sign out">
 									<LogOut size={18} />
@@ -179,7 +208,7 @@
 				</div>
 			</div>
 		{:else}
-			<button type="button" class="login-link" onclick={() => { loginModalOpen = true; loginModalError = null; }}>Log in</button>
+			<button type="button" class="login-link" onclick={() => { loginModalOpen = true; loginModalError = null; }}>Sign in</button>
 		{/if}
 	</header>
 
@@ -202,7 +231,7 @@
 			role="dialog"
 			aria-modal="true"
 			aria-labelledby="login-modal-title"
-			aria-label="Log in"
+			aria-label="Sign in"
 			onclick={(e) => e.stopPropagation()}
 		>
 			<h2 id="login-modal-title" class="login-modal-title">Welcome back</h2>
@@ -218,7 +247,8 @@
 							loginModalError = result.data.message as string;
 						} else {
 							loginModalOpen = false;
-							await invalidateAll();
+							showAuthLoadingScreen.set(true);
+							/* Movies and layout data load after overlay ends (see $effect) */
 						}
 						loginModalSubmitting = false;
 					};
@@ -251,7 +281,7 @@
 					<p class="login-modal-error" role="alert">{loginModalError}</p>
 				{/if}
 				<button type="submit" class="login-modal-btn" disabled={loginModalSubmitting}>
-					{loginModalSubmitting ? 'Signing in…' : 'Log in'}
+					{loginModalSubmitting ? 'Signing in…' : 'Sign in'}
 				</button>
 			</form>
 		</div>
@@ -426,6 +456,84 @@
 		position: relative;
 	}
 
+	/* Auth loading overlay – same blue VHS style as "Watched" transition */
+	.auth-loading-screen {
+		position: fixed;
+		inset: 0;
+		z-index: 10002;
+		background: rgba(0, 0, 204, 0.78);
+		backdrop-filter: blur(2px);
+		-webkit-backdrop-filter: blur(2px);
+		animation: auth-loading-in 0.55s ease-out;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	@keyframes auth-loading-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.auth-loading-screen { animation: none; }
+	}
+	.auth-loading-scanlines {
+		position: absolute;
+		inset: 0;
+		background-image: repeating-linear-gradient(
+			0deg,
+			transparent 0px,
+			transparent 2px,
+			rgba(0, 0, 0, 0.05) 2px,
+			rgba(0, 0, 0, 0.05) 4px
+		);
+		pointer-events: none;
+	}
+	.auth-loading-grain {
+		position: absolute;
+		inset: 0;
+		background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+		opacity: 0.04;
+		mix-blend-mode: overlay;
+		pointer-events: none;
+	}
+	.auth-loading-inner {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.75rem;
+		font-family: 'VT323', monospace;
+		pointer-events: none;
+	}
+	.auth-loading-title {
+		font-size: clamp(1.75rem, 5vw, 3rem);
+		font-weight: 600;
+		color: rgba(255, 255, 255, 0.95);
+		letter-spacing: 0.1em;
+		text-shadow: 0 0 1px rgba(0, 0, 0, 0.4);
+	}
+	.auth-loading-dots {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+	}
+	.auth-loading-dots span {
+		width: 0.4em;
+		height: 0.4em;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.9);
+		animation: auth-loading-bullet 1.2s ease-in-out infinite both;
+	}
+	.auth-loading-dots span:nth-child(1) { animation-delay: 0s; }
+	.auth-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+	.auth-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+	@keyframes auth-loading-bullet {
+		0%, 80%, 100% { opacity: 0.35; transform: scale(0.85); }
+		40% { opacity: 1; transform: scale(1); }
+	}
+
 	/* VHS/CRT overlay: grain + neutral dark tint (scanlines are on movie posters in page) */
 	.vhs-overlay {
 		position: fixed;
@@ -468,7 +576,7 @@
 		gap: 16px;
 	}
 
-	/* Add movie: text button (matches Filters style) */
+	/* Add movie: text button (matches Filters / Back to watchlist hover style) */
 	.add-movie-cta {
 		display: inline-flex;
 		align-items: center;
@@ -476,21 +584,21 @@
 		gap: 0.4rem;
 		height: auto;
 		margin: 0;
-		padding: 0.4rem 0;
+		padding: 0.35em 0.6em;
 		font-size: 0.9rem;
 		font-weight: 600;
 		line-height: 1;
 		font-family: inherit;
 		border: none;
-		border-radius: 0;
+		border-radius: 6px;
 		background: none;
 		color: var(--text);
 		cursor: pointer;
-		transition: color 0.2s ease, opacity 0.2s ease;
+		transition: background-color 0.2s ease, color 0.2s ease;
 	}
 	.add-movie-cta:hover {
+		background-color: var(--card-bg, rgba(255, 255, 255, 0.06));
 		color: var(--link);
-		opacity: 0.95;
 	}
 	.add-movie-cta:focus-visible {
 		outline: 3px solid var(--btn-primary-focus);
@@ -748,7 +856,7 @@
 		position: absolute;
 		top: calc(100% + 6px);
 		right: 0;
-		min-width: 180px;
+		min-width: 220px;
 		padding: 0.5rem;
 		background: var(--card-bg);
 		border: 1px solid var(--border);
@@ -769,8 +877,24 @@
 		}
 	}
 
+	.user-menu-sep {
+		height: 1px;
+		background: var(--border);
+		margin: 0.5rem 0;
+	}
+
 	.user-menu-item-form {
 		margin: 0;
+	}
+
+	.user-menu-link {
+		text-decoration: none;
+		color: var(--text);
+	}
+
+	.user-menu-link:hover {
+		text-decoration: none;
+		color: var(--text);
 	}
 
 	.user-menu-item {
@@ -827,7 +951,7 @@
 		outline-offset: 2px;
 	}
 
-	/* Login modal (top-right Log in button) */
+	/* Sign in modal (header Sign in button) */
 	.login-modal-backdrop {
 		position: fixed;
 		inset: 0;

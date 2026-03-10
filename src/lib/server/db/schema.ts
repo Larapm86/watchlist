@@ -19,7 +19,8 @@ export const watchlist = pgTable('watchlist', {
 	year: text('year'),
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	watchedAt: timestamp('watched_at'),
-	rating: text('rating') // 'good' | 'average' | 'bad'
+	rating: text('rating'), // '1'..'5' stars
+	runtime: integer('runtime') // minutes, from TMDB
 });
 
 export * from './auth.schema';

@@ -24,7 +24,8 @@ export const load: PageServerLoad = async (event) => {
 				year: watchlist.year,
 				createdAt: watchlist.createdAt,
 				watchedAt: watchlist.watchedAt,
-				rating: watchlist.rating
+				rating: watchlist.rating,
+				runtime: watchlist.runtime
 			})
 			.from(watchlist)
 			.where(eq(watchlist.userId, user.id))
@@ -69,14 +70,15 @@ export const load: PageServerLoad = async (event) => {
 			year: str(row, 'year') ?? null,
 			createdAt: date(row, 'createdAt', 'created_at') ?? (row.createdAt ?? row.created_at as Date) ?? new Date(),
 			watchedAt: date(row, 'watchedAt', 'watched_at') ?? null,
-			rating: str(row, 'rating') ?? (row.rating as string | null) ?? null
+			rating: str(row, 'rating') ?? (row.rating as string | null) ?? null,
+			runtime: num(row, 'runtime') ?? (row.runtime as number | null) ?? null
 		}));
 
 		return { user, watchlist: watchlistData };
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : String(err);
 		const lower = msg.toLowerCase();
-		if (lower.includes('column') || lower.includes('poster_path') || lower.includes('watched_at') || lower.includes('rating') || lower.includes('schema') || lower.includes('relation') || lower.includes('does not exist')) {
+		if (lower.includes('column') || lower.includes('poster_path') || lower.includes('watched_at') || lower.includes('rating') || lower.includes('runtime') || lower.includes('schema') || lower.includes('relation') || lower.includes('does not exist')) {
 			throw new Error(
 				'Database schema is out of date or missing. Run: pnpm db:migrate (or pnpm db:push) and ensure DATABASE_URL in .env is correct.'
 			);
@@ -111,7 +113,8 @@ export const actions: Actions = {
 				posterPath: details.posterPath ?? null,
 				overview: details.overview ?? null,
 				genre: details.genre ?? null,
-				year: details.year ?? null
+				year: details.year ?? null,
+				runtime: details.runtime ?? null
 			});
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
