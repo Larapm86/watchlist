@@ -20,7 +20,8 @@ export const watchlist = pgTable('watchlist', {
 	createdAt: timestamp('created_at').defaultNow().notNull(),
 	watchedAt: timestamp('watched_at'),
 	rating: text('rating'), // '1'..'5' stars
-	runtime: integer('runtime') // minutes, from TMDB
+	runtime: integer('runtime'), // minutes, from TMDB
+	rewatchCount: integer('rewatch_count').notNull().default(0) // times dropped on VHS for re-watch
 });
 
 export * from './auth.schema';

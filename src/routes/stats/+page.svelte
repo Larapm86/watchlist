@@ -37,6 +37,10 @@
 							<span class="stats-card-value">{stats.watchedThisYear}</span>
 							<span class="stats-card-label">This year</span>
 						</div>
+						<div class="stats-card">
+							<span class="stats-card-value">{stats.rewatches ?? 0}</span>
+							<span class="stats-card-label">Re-watches</span>
+						</div>
 						{#if stats.averageRating != null}
 							<div class="stats-card">
 								<span class="stats-card-value">{stats.averageRating} ★</span>

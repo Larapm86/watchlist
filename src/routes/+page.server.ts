@@ -25,7 +25,8 @@ export const load: PageServerLoad = async (event) => {
 				createdAt: watchlist.createdAt,
 				watchedAt: watchlist.watchedAt,
 				rating: watchlist.rating,
-				runtime: watchlist.runtime
+				runtime: watchlist.runtime,
+				rewatchCount: watchlist.rewatchCount
 			})
 			.from(watchlist)
 			.where(eq(watchlist.userId, user.id))
@@ -71,7 +72,8 @@ export const load: PageServerLoad = async (event) => {
 			createdAt: date(row, 'createdAt', 'created_at') ?? (row.createdAt ?? row.created_at as Date) ?? new Date(),
 			watchedAt: date(row, 'watchedAt', 'watched_at') ?? null,
 			rating: str(row, 'rating') ?? (row.rating as string | null) ?? null,
-			runtime: num(row, 'runtime') ?? (row.runtime as number | null) ?? null
+			runtime: num(row, 'runtime') ?? (row.runtime as number | null) ?? null,
+			rewatchCount: num(row, 'rewatchCount', 'rewatch_count') ?? 0
 		}));
 
 		return { user, watchlist: watchlistData };
@@ -188,15 +190,24 @@ export const actions: Actions = {
 		}
 
 		try {
+			const [row] = await db
+				.select({ watchedAt: watchlist.watchedAt, rewatchCount: watchlist.rewatchCount })
+				.from(watchlist)
+				.where(and(eq(watchlist.id, parsed), eq(watchlist.userId, user.id)));
+			const isRewatch = row?.watchedAt != null;
+			const updates: { watchedAt: Date; rewatchCount?: number } = { watchedAt: new Date() };
+			if (isRewatch && row) {
+				updates.rewatchCount = (row.rewatchCount ?? 0) + 1;
+			}
 			await db
 				.update(watchlist)
-				.set({ watchedAt: new Date() })
+				.set(updates)
 				.where(and(eq(watchlist.id, parsed), eq(watchlist.userId, user.id)));
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
-			if (msg.includes('watched_at') || msg.includes('column')) {
+			if (msg.includes('watched_at') || msg.includes('column') || msg.includes('rewatch')) {
 				return fail(422, {
-					message: 'Database missing watched_at column. Run: pnpm db:push'
+					message: 'Database schema may be out of date. Run: pnpm db:push'
 				});
 			}
 			return fail(422, { message: 'Could not update movie.' });

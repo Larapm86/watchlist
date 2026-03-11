@@ -57,6 +57,13 @@
       "when": 1773152835370,
       "tag": "0007_early_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773243045023,
+      "tag": "0008_mushy_marauders",
+      "breakpoints": true
     }
   ]
 }

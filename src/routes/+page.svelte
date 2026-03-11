@@ -485,7 +485,7 @@
 							class="poster-card hero-poster"
 							class:watched={isWatched}
 							class:to-watch={!isWatched}
-							draggable={!isWatched}
+							draggable={true}
 							ondragstart={(e) => handleDragStart(e, item.id)}
 							onmouseenter={(e) => handleCardMouseEnter(e, i)}
 							onmouseleave={handleCardMouseLeave}
@@ -502,14 +502,15 @@
 								{#if isWatched && (item.id !== lastDroppedId || stickerRevealedForDrop)}
 									{@const r = item.rating}
 									{@const stickerRating = r === '1' || r === '2' ? 'bad' : r === '3' ? 'average' : (r === '4' || r === '5') ? 'good' : 'average'}
-									<div class="poster-watched-sticker sticker-{stickerRating}" aria-label={item.rating ? `${item.rating} star(s)` : 'Watched'}>
+									{@const stickerLabel = (item.rewatchCount ?? 0) > 0 ? 'Re-watched' : 'Watched'}
+									<div class="poster-watched-sticker sticker-{stickerRating}" aria-label={item.rating ? `${item.rating} star(s)` : stickerLabel}>
 										<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 											<circle cx="20" cy="20" r="19" fill="var(--sticker-fill)"/>
 											<defs>
 												<path id="sticker-arc-{item.id}" d="M 8 20 A 12 12 0 0 1 32 20"/>
 											</defs>
 											<text fill="var(--sticker-text)" font-family="VT323, monospace" font-size="10" font-weight="700">
-												<textPath href="#sticker-arc-{item.id}" startOffset="50%" text-anchor="middle">Watched</textPath>
+												<textPath href="#sticker-arc-{item.id}" startOffset="50%" text-anchor="middle">{stickerLabel}</textPath>
 											</text>
 											<text x="20" y="20.6" fill="var(--sticker-text)" font-family="VT323, monospace" font-size="14" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(90 20 20)">
 												{stickerRating === 'good' ? ':)' : stickerRating === 'bad' ? ':(' : ':/'}

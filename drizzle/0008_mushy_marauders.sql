@@ -1,0 +1,1 @@
+ALTER TABLE "watchlist" ADD COLUMN "rewatch_count" integer DEFAULT 0 NOT NULL;

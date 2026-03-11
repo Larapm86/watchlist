@@ -8,6 +8,7 @@ const EMPTY_STATS = {
 	inWatchlist: 0,
 	watchedThisMonth: 0,
 	watchedThisYear: 0,
+	rewatches: 0,
 	averageRating: null as number | null,
 	totalRuntimeMinutes: 0,
 	totalRuntimeFormatted: null as string | null,
@@ -23,19 +24,20 @@ export const load: LayoutServerLoad = async (event) => {
 	}
 
 	try {
-		let rows: { watchedAt: Date | null; rating: string | null; genre: string | null; runtime?: number | null }[];
+		let rows: { watchedAt: Date | null; rating: string | null; genre: string | null; runtime?: number | null; rewatchCount?: number | null }[];
 		try {
 			rows = await db
 				.select({
 					watchedAt: watchlist.watchedAt,
 					rating: watchlist.rating,
 					genre: watchlist.genre,
-					runtime: watchlist.runtime
+					runtime: watchlist.runtime,
+					rewatchCount: watchlist.rewatchCount
 				})
 				.from(watchlist)
 				.where(eq(watchlist.userId, user.id));
 		} catch {
-			// Fallback when runtime column doesn't exist yet (migration not run)
+			// Fallback when runtime or rewatchCount column doesn't exist yet (migration not run)
 			rows = await db
 				.select({
 					watchedAt: watchlist.watchedAt,
@@ -44,7 +46,7 @@ export const load: LayoutServerLoad = async (event) => {
 				})
 				.from(watchlist)
 				.where(eq(watchlist.userId, user.id));
-			rows = rows.map((r) => ({ ...r, runtime: null }));
+			rows = rows.map((r) => ({ ...r, runtime: null, rewatchCount: null }));
 		}
 
 		const now = new Date();
@@ -54,6 +56,7 @@ export const load: LayoutServerLoad = async (event) => {
 		let inWatchlist = 0;
 		let watchedThisMonth = 0;
 		let watchedThisYear = 0;
+		let rewatches = 0;
 		let ratingSum = 0;
 		let ratingCount = 0;
 		let totalRuntimeMinutes = 0;
@@ -65,6 +68,7 @@ export const load: LayoutServerLoad = async (event) => {
 			const watched = row.watchedAt != null;
 			if (watched) {
 				moviesWatched++;
+				rewatches += typeof row.rewatchCount === 'number' ? row.rewatchCount : 0;
 				const d = row.watchedAt instanceof Date ? row.watchedAt : new Date(row.watchedAt);
 				if (d.getFullYear() === thisYear) watchedThisYear++;
 				if (d.getFullYear() === thisYear && d.getMonth() === thisMonth) watchedThisMonth++;
@@ -125,6 +129,7 @@ export const load: LayoutServerLoad = async (event) => {
 				inWatchlist,
 				watchedThisMonth,
 				watchedThisYear,
+				rewatches,
 				averageRating: averageRating != null ? Math.round(averageRating * 10) / 10 : null,
 				totalRuntimeMinutes,
 				totalRuntimeFormatted: totalRuntimeMinutes > 0 ? formatRuntime(totalRuntimeMinutes) : null,
