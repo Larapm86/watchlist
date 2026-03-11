@@ -583,7 +583,8 @@
 								{#if isWatched && (item.id !== lastDroppedId || stickerRevealedForDrop)}
 									{@const r = item.rating}
 									{@const stickerRating = r === '1' || r === '2' ? 'bad' : r === '3' ? 'average' : (r === '4' || r === '5') ? 'good' : 'average'}
-									{@const stickerLabel = (item.rewatchCount ?? 0) > 0 ? 'Re-watched' : 'Watched'}
+									{@const isRewatch = (item.rewatchCount ?? 0) > 0}
+									{@const stickerLabel = isRewatch ? 'Rewatched' : 'Watched'}
 									<div class="poster-watched-sticker sticker-{stickerRating}" aria-label={item.rating ? `${item.rating} star(s)` : stickerLabel}>
 										<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 											<circle cx="20" cy="20" r="19" fill="var(--sticker-fill)"/>
