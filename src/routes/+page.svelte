@@ -585,7 +585,7 @@
 									{@const stickerRating = r === '1' || r === '2' ? 'bad' : r === '3' ? 'average' : (r === '4' || r === '5') ? 'good' : 'average'}
 									{@const isRewatch = (item.rewatchCount ?? 0) > 0}
 									{@const stickerLabel = isRewatch ? 'Rewatched' : 'Watched'}
-									<div class="poster-watched-sticker sticker-{stickerRating}" aria-label={item.rating ? `${item.rating} star(s)` : stickerLabel}>
+									<div class="poster-watched-sticker sticker-{stickerRating}" class:sticker-rewatched={isRewatch} aria-label={item.rating ? `${item.rating} star(s)` : stickerLabel}>
 										<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 											<circle cx="20" cy="20" r="19" fill="var(--sticker-fill)"/>
 											<defs>
@@ -1525,17 +1525,32 @@
 		--sticker-outline: #14532d;
 		--sticker-text: #14532d;
 	}
+	.poster-watched-sticker.sticker-good.sticker-rewatched {
+		--sticker-fill: #14532d;
+		--sticker-outline: #22c55e;
+		--sticker-text: #22c55e;
+	}
 	/* Average: purple sticker → dark purple outline + text */
 	.poster-watched-sticker.sticker-average {
 		--sticker-fill: #7c3aed;
 		--sticker-outline: #4c1d95;
 		--sticker-text: #4c1d95;
 	}
+	.poster-watched-sticker.sticker-average.sticker-rewatched {
+		--sticker-fill: #4c1d95;
+		--sticker-outline: #7c3aed;
+		--sticker-text: #7c3aed;
+	}
 	/* Bad: yellow sticker → dark amber outline + text */
 	.poster-watched-sticker.sticker-bad {
 		--sticker-fill: #eab308;
 		--sticker-outline: #713f12;
 		--sticker-text: #713f12;
+	}
+	.poster-watched-sticker.sticker-bad.sticker-rewatched {
+		--sticker-fill: #713f12;
+		--sticker-outline: #eab308;
+		--sticker-text: #eab308;
 	}
 
 	.poster-watched-sticker {
