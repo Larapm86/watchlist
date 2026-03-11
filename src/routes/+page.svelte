@@ -170,7 +170,7 @@
 		e.dataTransfer.effectAllowed = 'move';
 	}
 
-	const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w780';
+	const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
 	function getPosterUrl(item: { posterPath?: string | null; poster_path?: string | null }): string | null {
 		const raw = item.posterPath ?? item.poster_path;
 		if (raw == null || String(raw).trim() === '') return null;
@@ -522,7 +522,9 @@
 										class="poster-image"
 										src={posterUrl}
 										alt={item.title}
-										referrerpolicy="no-referrer"
+										loading="lazy"
+										decoding="async"
+										referrerpolicy="strict-origin-when-cross-origin"
 										onerror={(e) => {
 											const el = e.currentTarget;
 											const placeholder = el?.nextElementSibling as HTMLElement | null;
