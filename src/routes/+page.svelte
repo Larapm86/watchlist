@@ -1332,14 +1332,14 @@
 		overflow: hidden;
 	}
 
-	/* Plastic-sleeve sheen over the poster window (frosted clear plastic) */
+	/* Plastic-sleeve sheen over the poster window (frosted clear plastic) – behind the image so poster is visible */
 	.poster::before {
 		content: '';
 		position: absolute;
 		inset: 0;
 		background: linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, transparent 35%, transparent 100%);
 		pointer-events: none;
-		z-index: 1;
+		z-index: 0;
 		border-radius: inherit;
 	}
 
@@ -1389,11 +1389,11 @@
 		box-sizing: border-box;
 	}
 
-	/* Scanlines only on poster face (above image; sticker/title/overlay above this) */
+	/* Scanlines on top of the image for VHS effect */
 	.poster-scanlines {
 		position: absolute;
 		inset: 0;
-		z-index: 1;
+		z-index: 2;
 		pointer-events: none;
 		background-image: repeating-linear-gradient(
 			0deg,
@@ -1414,7 +1414,7 @@
 		position: absolute;
 		top: 0.5rem;
 		right: 0.5rem;
-		z-index: 1;
+		z-index: 4;
 		width: 64px;
 		height: 64px;
 		border-radius: 50%;
@@ -1472,7 +1472,7 @@
 	.poster-overlay {
 		position: absolute;
 		inset: 0;
-		z-index: 2;
+		z-index: 3;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -1584,6 +1584,7 @@
 		height: 100%;
 		display: block;
 		object-fit: cover;
+		z-index: 1;
 	}
 
 	.poster-title-overlay {
@@ -1591,7 +1592,7 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		z-index: 1;
+		z-index: 3;
 		padding: 0.5rem 0.6rem 0.45rem;
 		background: #0d0d0d;
 		border-top: 2px solid #333;
