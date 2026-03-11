@@ -164,10 +164,91 @@
 		mouseInCardY = Math.max(-1, Math.min(1, y)) * 100;
 	}
 
+	/** Creates a small VHS cassette canvas for the drag image */
+	function createVhsDragImage(): HTMLCanvasElement {
+		const scale = 2;
+		const w = 56 * scale;
+		const h = 36 * scale;
+		const canvas = document.createElement('canvas');
+		canvas.width = w;
+		canvas.height = h;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return canvas;
+
+		const r = (n: number) => n * scale;
+		// Body (rounded rect)
+		ctx.fillStyle = '#27272a';
+		roundRect(ctx, 0, 0, r(56), r(36), r(4));
+		ctx.fill();
+		// Top edge highlight
+		ctx.fillStyle = '#3f3f46';
+		ctx.beginPath();
+		ctx.moveTo(r(4), r(2));
+		ctx.lineTo(r(52), r(2));
+		ctx.lineTo(r(54), 0);
+		ctx.lineTo(r(2), 0);
+		ctx.closePath();
+		ctx.fill();
+		// Tape window (dark slot)
+		ctx.fillStyle = '#18181b';
+		roundRect(ctx, r(8), r(8), r(40), r(20), r(2));
+		ctx.fill();
+		ctx.strokeStyle = '#3f3f46';
+		ctx.lineWidth = 1;
+		ctx.stroke();
+		// Inner window (film area)
+		ctx.fillStyle = '#0d0d0f';
+		roundRect(ctx, r(10), r(10), r(36), r(16), r(1));
+		ctx.fill();
+		// Reel circles
+		ctx.fillStyle = '#27272a';
+		ctx.strokeStyle = '#52525b';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		ctx.arc(r(18), r(18), r(4), 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
+		ctx.beginPath();
+		ctx.arc(r(38), r(18), r(4), 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
+
+		return canvas;
+	}
+
+	function roundRect(
+		ctx: CanvasRenderingContext2D,
+		x: number,
+		y: number,
+		width: number,
+		height: number,
+		radius: number
+	) {
+		ctx.beginPath();
+		ctx.moveTo(x + radius, y);
+		ctx.lineTo(x + width - radius, y);
+		ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+		ctx.lineTo(x + width, y + height - radius);
+		ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+		ctx.lineTo(x + radius, y + height);
+		ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+		ctx.lineTo(x, y + radius);
+		ctx.quadraticCurveTo(x, y, x + radius, y);
+		ctx.closePath();
+	}
+
 	function handleDragStart(e: DragEvent, id: number) {
 		if (!e.dataTransfer) return;
 		e.dataTransfer.setData('text/plain', String(id));
 		e.dataTransfer.effectAllowed = 'move';
+		const canvas = createVhsDragImage();
+		canvas.style.position = 'fixed';
+		canvas.style.left = '-9999px';
+		canvas.style.top = '0';
+		document.body.appendChild(canvas);
+		const scale = 2;
+		e.dataTransfer.setDragImage(canvas, (56 * scale) / 2, (36 * scale) / 2);
+		setTimeout(() => canvas.remove(), 0);
 	}
 
 	const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p/w500';
