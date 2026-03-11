@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { watchlist } from '$lib/server/db/schema';
-import { searchMovieDetails } from '$lib/server/tmdb';
+import { getMovieDetailsById, searchMovieDetails } from '$lib/server/tmdb';
 import { and, desc, eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -100,16 +100,37 @@ export const actions: Actions = {
 		}
 
 		const formData = await event.request.formData();
+		const tmdbIdRaw = formData.get('tmdbId');
+		const tmdbId =
+			tmdbIdRaw != null ? (typeof tmdbIdRaw === 'string' ? parseInt(tmdbIdRaw, 10) : Number(tmdbIdRaw)) : NaN;
 		const title = formData.get('title')?.toString()?.trim();
-		if (!title) {
-			return fail(400, { message: 'Title is required' });
+
+		let details: { title: string; posterPath: string | null; overview: string | null; genre: string | null; year: string | null; runtime: number | null };
+		try {
+			if (Number.isInteger(tmdbId) && tmdbId > 0) {
+				details = await getMovieDetailsById(tmdbId);
+			} else if (title) {
+				details = await searchMovieDetails(title);
+				details = { ...details, title };
+			} else {
+				return fail(400, { message: 'Choose a movie from the list or enter a title.' });
+			}
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			if (msg.includes('column') || msg.includes('schema')) {
+				return fail(422, {
+					message: 'Database schema out of date. Run: pnpm db:migrate'
+				});
+			}
+			return fail(422, {
+				message: 'Could not add movie. Try again later.'
+			});
 		}
 
 		try {
-			const details = await searchMovieDetails(title);
 			await db.insert(watchlist).values({
 				userId: user.id,
-				title,
+				title: details.title,
 				posterPath: details.posterPath ?? null,
 				overview: details.overview ?? null,
 				genre: details.genre ?? null,
@@ -124,7 +145,7 @@ export const actions: Actions = {
 				});
 			}
 			return fail(422, {
-				message: 'Could not add movie. Check the title or try again later.'
+				message: 'Could not add movie. Try again later.'
 			});
 		}
 

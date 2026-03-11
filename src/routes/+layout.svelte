@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { fade } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
@@ -20,6 +20,12 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	let addMovieCtaRef: HTMLButtonElement;
 	let addOverlayPreviousFocus: HTMLElement | null = null;
 	let addFormSubmitting = $state(false);
+	let addFormRef: HTMLFormElement;
+	let addSearchQuery = $state('');
+	let addSearchResults = $state<Array<{ id: number; title: string; poster_path: string | null; year: string | null; overview: string | null; genre: string | null }>>([]);
+	let addSearchLoading = $state(false);
+	let addSearchDebounce: ReturnType<typeof setTimeout> | null = null;
+	const TMDB_POSTER_BASE = 'https://image.tmdb.org/t/p/w92';
 	let loginModalOpen = $state(false);
 	let loginModalSubmitting = $state(false);
 	let loginModalError = $state<string | null>(null);
@@ -63,6 +69,12 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	$effect(() => {
 		if (!addOverlayOpen) return;
 		addOverlayPreviousFocus = document.activeElement as HTMLElement | null;
+		addSearchQuery = '';
+		addSearchResults = [];
+		if (addSearchDebounce) {
+			clearTimeout(addSearchDebounce);
+			addSearchDebounce = null;
+		}
 		const t = setTimeout(() => {
 			addOverlayInput?.focus();
 		}, 50);
@@ -95,7 +107,41 @@ import Plus from '$lib/components/icons/Plus.svelte';
 	function closeAddOverlay() {
 		addOverlayOpen = false;
 		addFormMessage.set(null);
+		addSearchQuery = '';
+		addSearchResults = [];
+		if (addSearchDebounce) {
+			clearTimeout(addSearchDebounce);
+			addSearchDebounce = null;
+		}
 		requestAnimationFrame(() => addOverlayPreviousFocus?.focus());
+	}
+
+	async function fetchSearchResults(q: string) {
+		if (q.trim().length < 2) {
+			addSearchResults = [];
+			return;
+		}
+		addSearchLoading = true;
+		try {
+			const res = await fetch(`/api/search-movies?q=${encodeURIComponent(q.trim())}`);
+			const data = await res.json();
+			addSearchResults = Array.isArray(data) ? data : [];
+		} catch {
+			addSearchResults = [];
+		} finally {
+			addSearchLoading = false;
+		}
+	}
+
+	function onAddSearchInput() {
+		addFormMessage.set(null);
+		const value = addOverlayInput?.value ?? '';
+		addSearchQuery = value;
+		if (addSearchDebounce) clearTimeout(addSearchDebounce);
+		addSearchDebounce = setTimeout(() => {
+			addSearchDebounce = null;
+			fetchSearchResults(value);
+		}, 300);
 	}
 
 	function userInitials(user: { name?: string | null; email: string }) {
@@ -305,6 +351,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 			<form
 				method="post"
 				action="/?/add"
+				bind:this={addFormRef}
 				use:enhance={() => {
 					addFormSubmitting = true;
 					addFormMessage.set(null);
@@ -316,6 +363,7 @@ import Plus from '$lib/components/icons/Plus.svelte';
 								addFormMessage.set(null);
 								closeAddOverlay();
 							}
+							addSearchResults = [];
 							await update();
 							await invalidateAll();
 						} catch (e) {
@@ -331,15 +379,58 @@ import Plus from '$lib/components/icons/Plus.svelte';
 					type="text"
 					name="title"
 					placeholder="e.g. Past Lives, Mulan, Wonder Woman"
-					required
 					aria-label="Movie title"
 					autocomplete="off"
 					class="add-overlay-input"
 					bind:this={addOverlayInput}
-					oninput={() => addFormMessage.set(null)}
+					bind:value={addSearchQuery}
+					oninput={onAddSearchInput}
 					disabled={addFormSubmitting}
 				/>
-				<p id="add-movie-hint" class="add-overlay-hint">Type a movie title and press Enter to add it.</p>
+				<p id="add-movie-hint" class="add-overlay-hint">
+					Search and pick a movie from the list, or press Enter to add the first match.
+				</p>
+				<div class="add-overlay-results-slot">
+					{#if addSearchLoading}
+						<p class="add-overlay-hint" aria-live="polite">Searching…</p>
+					{:else if addSearchQuery.trim().length >= 2 && addSearchResults.length === 0 && !addSearchLoading}
+						<p class="add-overlay-hint">No movies found. Try another title or press Enter to add by name.</p>
+					{:else if addSearchResults.length > 0}
+						<ul
+							class="add-overlay-results"
+							role="list"
+							aria-label="Search results"
+							in:fly={{ y: 8, duration: 220, easing: (t) => t * (2 - t) }}
+							out:fly={{ y: 8, duration: 140, easing: (t) => t * t }}
+						>
+							{#each addSearchResults as movie (movie.id)}
+								<li>
+									<button
+										type="submit"
+										name="tmdbId"
+										value={movie.id}
+										class="add-overlay-result-btn"
+										disabled={addFormSubmitting}
+									>
+										<span class="add-overlay-result-poster">
+											{#if movie.poster_path}
+												<img src="{TMDB_POSTER_BASE}{movie.poster_path}" alt="" width="46" height="69" />
+											{:else}
+												<span class="add-overlay-result-poster-placeholder">{movie.title.slice(0, 2)}</span>
+											{/if}
+										</span>
+										<span class="add-overlay-result-info">
+											<span class="add-overlay-result-title">{movie.title}</span>
+											{#if movie.year || movie.genre}
+												<span class="add-overlay-result-meta">{[movie.year, movie.genre].filter(Boolean).join(' · ')}</span>
+											{/if}
+										</span>
+									</button>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+				</div>
 				{#if $addFormMessage}
 					<p class="add-overlay-error" id="add-movie-error" role="alert">{$addFormMessage}</p>
 				{/if}
@@ -692,11 +783,15 @@ import Plus from '$lib/components/icons/Plus.svelte';
 
 	.add-overlay-panel {
 		position: fixed;
-		top: 50%;
+		top: 24vh;
 		left: 50%;
-		transform: translate(-50%, -50%);
+		transform: translateX(-50%);
 		width: 90%;
 		max-width: 420px;
+		max-height: calc(80vh - 2rem);
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
 		padding: 1.5rem;
 		background: var(--modal-bg);
 		border: 1px solid var(--modal-border);
@@ -709,6 +804,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
+		min-height: 0;
+		flex: 1;
+		overflow: auto;
 	}
 
 	.add-overlay-input {
@@ -753,6 +851,97 @@ import Plus from '$lib/components/icons/Plus.svelte';
 		font-size: 0.8125rem;
 		color: var(--modal-error);
 		padding: 0.25rem 0;
+	}
+
+	.add-overlay-results-slot {
+		min-height: 0;
+	}
+
+	.add-overlay-results {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		max-height: 280px;
+		overflow-y: auto;
+		border: 1px solid var(--modal-input-border);
+		border-radius: 10px;
+		background: var(--modal-input-bg);
+	}
+
+	.add-overlay-result-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		width: 100%;
+		margin: 0;
+		padding: 0.5rem 0.75rem;
+		text-align: left;
+		font: inherit;
+		color: var(--modal-text);
+		background: transparent;
+		border: none;
+		border-bottom: 1px solid var(--modal-input-border);
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+	.add-overlay-result-btn:last-child {
+		border-bottom: none;
+	}
+	.add-overlay-result-btn:hover:not(:disabled) {
+		background: var(--modal-input-hover, rgba(255, 255, 255, 0.06));
+	}
+	.add-overlay-result-btn:focus-visible {
+		outline: none;
+		background: var(--modal-focus-ring);
+	}
+	.add-overlay-result-btn:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
+	}
+
+	.add-overlay-result-poster {
+		flex-shrink: 0;
+		width: 46px;
+		height: 69px;
+		border-radius: 6px;
+		overflow: hidden;
+		background: var(--modal-input-border);
+	}
+	.add-overlay-result-poster img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.add-overlay-result-poster-placeholder {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--modal-text-muted);
+	}
+
+	.add-overlay-result-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		min-width: 0;
+	}
+	.add-overlay-result-title {
+		font-weight: 500;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.add-overlay-result-meta {
+		font-size: 0.8125rem;
+		color: var(--modal-text-muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.sr-only {
