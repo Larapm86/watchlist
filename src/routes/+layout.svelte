@@ -364,8 +364,9 @@ import Plus from '$lib/components/icons/Plus.svelte';
 								closeAddOverlay();
 							}
 							addSearchResults = [];
-							await update();
+							// Invalidate first so load functions refetch; then update so UI shows new data
 							await invalidateAll();
+							await update();
 						} catch (e) {
 							addFormMessage.set('Something went wrong. Please try again.');
 						} finally {

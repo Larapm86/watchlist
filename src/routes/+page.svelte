@@ -54,6 +54,9 @@
 
 	let cinemaDropHighlight = $state(false);
 	let dropForm: HTMLFormElement;
+	let posterGridEl: HTMLUListElement;
+	let prevWatchlistLength = 0;
+	let watchlistLengthInitialized = false;
 	let optimisticallyWatchedIds = $state<number[]>([]);
 	let lastDroppedId = $state(0);
 	let showDropTransition = $state(false);
@@ -115,6 +118,22 @@
 		});
 		document.addEventListener('keydown', handleRatingModalKeydown, true);
 		return () => document.removeEventListener('keydown', handleRatingModalKeydown, true);
+	});
+
+	// When a new movie is added, scroll the poster strip to the start so the new (leftmost) item is visible
+	$effect(() => {
+		const len = data?.watchlist?.length ?? 0;
+		if (!watchlistLengthInitialized) {
+			prevWatchlistLength = len;
+			watchlistLengthInitialized = true;
+			return;
+		}
+		if (len > prevWatchlistLength) {
+			tick().then(() => {
+				if (posterGridEl) posterGridEl.scrollLeft = 0;
+			});
+		}
+		prevWatchlistLength = len;
 	});
 
 	function formatDropTime(seconds: number): string {
@@ -558,7 +577,7 @@
 			{:else if filteredWatchlist.length === 0}
 				<p class="empty">No movies match the current filters.</p>
 			{:else}
-				<ul class="poster-grid" role="list">
+				<ul class="poster-grid" role="list" bind:this={posterGridEl}>
 					{#each filteredWatchlist as item, i (item.id)}
 						{@const isWatched = !!item.watchedAt || optimisticallyWatchedIds.includes(item.id)}
 						{@const posterUrl = getPosterUrl(item)}
