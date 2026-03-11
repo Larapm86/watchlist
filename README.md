@@ -52,6 +52,8 @@ The app uses PostgreSQL (e.g. [Neon](https://neon.tech)) and Drizzle. If the dat
 
 4. **Auth (optional):** For sign-in/sign-up, set `BETTER_AUTH_SECRET` (e.g. a long random string) and `ORIGIN` (your app URL, e.g. `http://localhost:5173`) in `.env`.
 
+5. **Movie posters and details:** To load poster images and movie info (overview, genre, year), set `TMDB_API_KEY` in `.env`. Get a free API key at [The Movie Database](https://www.themoviedb.org/settings/api). Without it, movies are still added with the title you type, but the VHS case will show no poster and no extra details.
+
 If you see "Database schema is out of date" or "Cannot connect to the database", follow the steps above and ensure the database is running and reachable.
 
 ## Building

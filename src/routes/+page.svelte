@@ -532,9 +532,11 @@
 											}
 										}}
 									/>
-									<div class="poster-placeholder" aria-hidden="true" hidden></div>
+									<div class="poster-placeholder" aria-hidden="true" hidden><span class="poster-placeholder-title">{item.title}</span></div>
 								{:else}
-									<div class="poster-placeholder" aria-hidden="true"></div>
+									<div class="poster-placeholder" aria-hidden="true">
+										<span class="poster-placeholder-title">{item.title}</span>
+									</div>
 								{/if}
 								<div class="poster-title-overlay">
 									<span class="poster-meta-text">
@@ -1624,6 +1626,17 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		background: var(--poster-bg);
+	}
+	.poster-placeholder-title {
+		font-size: 0.875rem;
+		font-weight: 600;
+		line-height: 1.3;
+		color: var(--poster-text);
+		display: -webkit-box;
+		-webkit-line-clamp: 6;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
 	}
 
 	.poster-title {
