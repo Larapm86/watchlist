@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { slide } from 'svelte/transition';
+	import { fly } from 'svelte/transition';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { showAuthLoadingScreen } from '$lib/stores/authLoading';
@@ -61,35 +61,55 @@
 				{/if}
 			</div>
 
-			{#if step === 'full'}
-				<div class="landing-form-reveal" in:slide={{ duration: 320, easing: (t) => t * (2 - t) }} out:slide={{ duration: 200 }}>
-					<label class="landing-label">
-						<span class="landing-label-text">Email</span>
-						<input
-							type="email"
-							name="email"
-							autocomplete="email"
-							required
-							class="landing-input"
-							placeholder="you@example.com"
-						/>
-					</label>
-					<label class="landing-label">
-						<span class="landing-label-text">Password</span>
-						<input
-							type="password"
-							name="password"
-							autocomplete="new-password"
-							required
-							class="landing-input"
-							placeholder="••••••••"
-						/>
-					</label>
-					<button type="submit" class="landing-btn landing-btn-primary" disabled={registerSubmitting}>
-						{registerSubmitting ? 'Creating account…' : 'Create account'}
-					</button>
-				</div>
-			{/if}
+			<div class="landing-form-reveal-slot">
+				{#if step === 'full'}
+					<div class="landing-form-reveal">
+						<div
+							class="landing-form-reveal-row"
+							in:fly={{ y: 10, duration: 440, delay: 0, easing: (t) => 1 - Math.pow(1 - t, 4) }}
+							out:fly={{ y: 6, duration: 200, delay: 0, easing: (t) => t * t }}
+						>
+							<label class="landing-label">
+								<span class="landing-label-text">Email</span>
+								<input
+									type="email"
+									name="email"
+									autocomplete="email"
+									required
+									class="landing-input"
+									placeholder="you@example.com"
+								/>
+							</label>
+						</div>
+						<div
+							class="landing-form-reveal-row"
+							in:fly={{ y: 10, duration: 440, delay: 70, easing: (t) => 1 - Math.pow(1 - t, 4) }}
+							out:fly={{ y: 6, duration: 200, delay: 0, easing: (t) => t * t }}
+						>
+							<label class="landing-label">
+								<span class="landing-label-text">Password</span>
+								<input
+									type="password"
+									name="password"
+									autocomplete="new-password"
+									required
+									class="landing-input"
+									placeholder="••••••••"
+								/>
+							</label>
+						</div>
+						<div
+							class="landing-form-reveal-row"
+							in:fly={{ y: 10, duration: 440, delay: 140, easing: (t) => 1 - Math.pow(1 - t, 4) }}
+							out:fly={{ y: 6, duration: 200, delay: 0, easing: (t) => t * t }}
+						>
+							<button type="submit" class="landing-btn landing-btn-primary" disabled={registerSubmitting}>
+								{registerSubmitting ? 'Creating account…' : 'Create account'}
+							</button>
+						</div>
+					</div>
+				{/if}
+			</div>
 		</form>
 	</div>
 </div>
@@ -119,6 +139,7 @@
 		width: 100%;
 		max-width: 420px;
 		text-align: center;
+		transform: translateY(-8vh);
 	}
 
 	/* 2. Typography */
@@ -160,10 +181,19 @@
 		gap: 1rem;
 	}
 
+	/* Reserve space so the form doesn't jump when email/password appear */
+	.landing-form-reveal-slot {
+		min-height: 220px;
+	}
+
 	.landing-form-reveal {
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+
+	.landing-form-reveal-row {
+		display: block;
 	}
 
 	.landing-label {
